@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { AppLayout } from '../layouts/AppLayout'
 import { AuthLayout } from '../layouts/AuthLayout'
 
+import { Home } from '../pages/Home'
 import { Login } from '../pages/Login'
 import { Register } from '../pages/Register'
 import { ForgotPassword } from '../pages/ForgotPassword'
@@ -42,6 +43,9 @@ const RoleRoute = ({ children, allowedRoles }) => {
 export const AppRoutes = () => {
   return (
     <Routes>
+      {/* Public Home / Landing Page */}
+      <Route path="/" element={<Home />} />
+
       {/* Public Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
@@ -57,7 +61,6 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/accounts" element={<Accounts />} />
         <Route path="/transactions" element={<Transactions />} />
