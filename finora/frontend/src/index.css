@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --finora-black: #0B0B0A;
+    --finora-card: #171714;
+    --finora-card-hover: #21201B;
+    --finora-border: #2B2A24;
+    --finora-gold: #D4AF37;
+    --finora-gold-hover: #C9A227;
+    --finora-text: #F5F1E6;
+    --finora-muted: #A9A59A;
+  }
+  
+  body {
+    background-color: var(--finora-black);
+    color: var(--finora-text);
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0B0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2B2A24;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D4AF37;
+}
+
+/* Metallic Gold Text Effect */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #FFF0B3 0%, #D4AF37 50%, #9A7B1C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-border-glow {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+}
+
+.gold-glass {
+  background: rgba(23, 23, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
