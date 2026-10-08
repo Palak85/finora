@@ -15,6 +15,7 @@
   body {
     background-color: var(--finora-black);
     color: var(--finora-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -49,4 +50,145 @@
   background: rgba(23, 23, 20, 0.85);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* ------------------------------------------------------------- */
+/* Light Mode Theme: Executive Warm Beige & Metallic Gold        */
+/* ------------------------------------------------------------- */
+.light {
+  color-scheme: light;
+  background-color: #F6F3EB !important;
+  color: #1F1C18 !important;
+}
+
+.light body {
+  background-color: #F6F3EB !important;
+  color: #1F1C18 !important;
+}
+
+/* 1. All Solid Backgrounds */
+.light .bg-\[\#0B0B0A\] {
+  background-color: #F6F3EB !important;
+}
+
+.light .bg-\[\#171714\] {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 4px 20px -2px rgba(184, 134, 11, 0.07);
+}
+
+.light .bg-\[\#21201B\] {
+  background-color: #F3EFE4 !important;
+}
+
+/* 2. All Opacity Variant Backgrounds */
+.light .bg-\[\#171714\]\/90 { background-color: rgba(255, 255, 255, 0.94) !important; }
+.light .bg-\[\#171714\]\/95 { background-color: rgba(255, 255, 255, 0.95) !important; }
+.light .bg-\[\#0B0B0A\]\/90 { background-color: #F6F3EB !important; }
+.light .bg-\[\#0B0B0A\]\/80 { background-color: #F3EFE4 !important; }
+.light .bg-\[\#0B0B0A\]\/70 { background-color: #F3EFE4 !important; }
+.light .bg-\[\#0B0B0A\]\/60 { background-color: #F3EFE4 !important; }
+.light .bg-\[\#0B0B0A\]\/50 { background-color: #F3EFE4 !important; }
+.light .bg-\[\#0B0B0A\]\/40 { background-color: #F3EFE4 !important; }
+.light .bg-\[\#0B0B0A\]\/85 { background-color: rgba(30, 27, 24, 0.45) !important; }
+
+/* 3. All Gradient Stops (Fixes Dashboard & Financial Health Hero Banners) */
+.light .from-\[\#171714\] {
+  --tw-gradient-from: #FFFFFF !important;
+  --tw-gradient-to: rgba(255, 255, 255, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.light .via-\[\#21201B\] {
+  --tw-gradient-via: #FAF6ED !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #FAF6ED, var(--tw-gradient-to) !important;
+}
+
+.light .to-\[\#21201B\] {
+  --tw-gradient-to: #FAF6ED !important;
+}
+
+.light .to-\[\#171714\] {
+  --tw-gradient-to: #FFFFFF !important;
+}
+
+.light .from-\[\#0B0B0A\] {
+  --tw-gradient-from: #F6F3EB !important;
+  --tw-gradient-to: rgba(246, 243, 235, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+/* 4. Hover States (Fixes Table Row & Sidebar Hovers) */
+.light .hover\:bg-\[\#21201B\]:hover { background-color: #F3EFE4 !important; }
+.light .hover\:bg-\[\#21201B\]\/60:hover { background-color: #FAF6ED !important; }
+.light .hover\:bg-\[\#171714\]:hover { background-color: #FFFFFF !important; }
+.light .hover\:bg-\[\#0B0B0A\]:hover { background-color: #F6F3EB !important; }
+.light .hover\:text-\[\#F5F1E6\]:hover { color: #1F1C18 !important; }
+.light .hover\:text-white:hover { color: #1F1C18 !important; }
+.light .hover\:border-\[\#D4AF37\]\/40:hover { border-color: rgba(184, 134, 11, 0.5) !important; }
+.light .hover\:border-\[\#D4AF37\]:hover { border-color: #B8860B !important; }
+
+/* 5. Borders & Dividers */
+.light .border-\[\#2B2A24\] { border-color: #E2DBCB !important; }
+.light .divide-\[\#2B2A24\] > * + * { border-color: #E2DBCB !important; }
+
+/* 6. Text Colors */
+.light .text-\[\#F5F1E6\] { color: #1F1C18 !important; }
+.light .text-\[\#A9A59A\] { color: #6E675F !important; }
+.light .text-\[\#D4AF37\] { color: #B8860B !important; }
+.light .placeholder-\[\#A9A59A\]::placeholder { color: #9E978C !important; }
+
+/* 7. Form inputs, selects, textareas & options */
+.light input,
+.light select,
+.light textarea,
+.light option {
+  background-color: #FFFFFF !important;
+  color: #1F1C18 !important;
+  border-color: #E2DBCB !important;
+}
+
+.light input:focus,
+.light select:focus,
+.light textarea:focus {
+  border-color: #B8860B !important;
+}
+
+/* 8. Active Sidebar item highlights */
+.light .from-\[\#D4AF37\]\/20 {
+  --tw-gradient-from: rgba(184, 134, 11, 0.16) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(184, 134, 11, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+/* 9. Metallic Gold Text & Glows */
+.light .gold-gradient-text {
+  background: linear-gradient(135deg, #8B6508 0%, #B8860B 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.light .gold-border-glow {
+  box-shadow: 0 10px 30px -5px rgba(184, 134, 11, 0.12);
+}
+
+.light .gold-glass {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(184, 134, 11, 0.25);
+}
+
+.light .bg-\[\#D4AF37\]\/5 { background-color: rgba(184, 134, 11, 0.06) !important; }
+.light .bg-\[\#D4AF37\]\/10 { background-color: rgba(184, 134, 11, 0.12) !important; }
+.light .bg-\[\#D4AF37\]\/15 { background-color: rgba(184, 134, 11, 0.16) !important; }
+.light .bg-\[\#D4AF37\]\/20 { background-color: rgba(184, 134, 11, 0.22) !important; }
+
+/* 10. Custom Scrollbars in Light Mode */
+.light ::-webkit-scrollbar-track {
+  background: #F6F3EB;
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #E2DBCB;
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #B8860B;
 }

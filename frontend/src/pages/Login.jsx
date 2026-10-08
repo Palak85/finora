@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { Mail, Lock, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export const Login = () => {
@@ -44,9 +44,17 @@ export const Login = () => {
   return (
     <div className="space-y-6">
       <div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#A9A59A] hover:text-[#D4AF37] transition-colors mb-3 group"
+        >
+          <ArrowLeft className="w-4 h-4 text-[#D4AF37] group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back to Home</span>
+        </Link>
         <h2 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">Welcome Back</h2>
         <p className="text-xs text-[#A9A59A] mt-1">Access your Finora private wealth dashboard</p>
       </div>
+
 
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold flex items-center gap-2">

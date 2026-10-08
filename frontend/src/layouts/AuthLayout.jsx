@@ -1,6 +1,6 @@
 import React from 'react'
 import { Outlet, Link } from 'react-router-dom'
-import { Sparkles, ShieldCheck, Lock, TrendingUp } from 'lucide-react'
+import { Sparkles, ShieldCheck, Lock, ArrowLeft } from 'lucide-react'
 
 export const AuthLayout = () => {
   return (
@@ -11,8 +11,8 @@ export const AuthLayout = () => {
 
       {/* Header */}
       <header className="p-6 lg:px-12 flex items-center justify-between z-10">
-        <Link to="/login" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-6 h-6 text-[#0B0B0A]" />
           </div>
           <div>
@@ -21,9 +21,17 @@ export const AuthLayout = () => {
           </div>
         </Link>
 
-        <div className="hidden sm:flex items-center gap-6 text-xs text-[#A9A59A]">
-          <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#D4AF37]" /> 256-Bit Encryption</span>
-          <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-[#D4AF37]" /> JWT Auth</span>
+        <div className="flex items-center gap-4 text-xs text-[#A9A59A]">
+          <span className="hidden sm:flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#D4AF37]" /> 256-Bit Encryption</span>
+          <span className="hidden sm:flex items-center gap-1.5"><Lock className="w-4 h-4 text-[#D4AF37]" /> JWT Auth</span>
+          
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#171714] border border-[#2B2A24] text-xs font-semibold text-[#F5F1E6] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 active:scale-95 transition-all shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#D4AF37]" />
+            <span>Home</span>
+          </Link>
         </div>
       </header>
 
@@ -41,3 +49,4 @@ export const AuthLayout = () => {
     </div>
   )
 }
+

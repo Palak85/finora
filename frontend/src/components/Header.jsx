@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Search, User, Shield, LogOut, Sparkles, ChevronDown, CheckCircle2 } from 'lucide-react'
+import { Bell, Search, User, Shield, LogOut, Sparkles, ChevronDown, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { notificationService } from '../services/api'
 
 export const Header = ({ onOpenQuickAdd }) => {
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [unreadCount, setUnreadCount] = useState(0)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false)
@@ -58,8 +60,18 @@ export const Header = ({ onOpenQuickAdd }) => {
           <Sparkles className="w-4 h-4" /> Quick Action
         </button>
 
+        {/* Theme Toggle Button (Sun/Moon) */}
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to Beige Light Mode' : 'Switch to Dark Mode'}
+          className="p-2.5 rounded-xl bg-[#0B0B0A] border border-[#2B2A24] text-[#A9A59A] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 active:scale-95 transition-all flex items-center justify-center"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4 text-[#D4AF37]" /> : <Moon className="w-4 h-4 text-[#D4AF37]" />}
+        </button>
+
         {/* Notifications Button */}
         <div className="relative">
+
           <button
             onClick={() => setNotifDrawerOpen(!notifDrawerOpen)}
             className="p-2.5 rounded-xl bg-[#0B0B0A] border border-[#2B2A24] text-[#A9A59A] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 relative transition-all"

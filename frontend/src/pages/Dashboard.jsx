@@ -80,8 +80,9 @@ export const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Hero Financial Banner */}
-      <div className="relative bg-gradient-to-r from-[#171714] via-[#21201B] to-[#171714] border border-[#2B2A24] rounded-3xl p-6 lg:p-8 overflow-hidden shadow-2xl gold-border-glow">
+      <div className="relative bg-[#171714] border border-[#2B2A24] rounded-3xl p-6 lg:p-8 overflow-hidden shadow-2xl gold-border-glow">
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
+
         
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
           <div>

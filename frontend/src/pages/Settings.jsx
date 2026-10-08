@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
-import { User, Lock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { User, Lock, CheckCircle2, AlertCircle, Sun, Moon, Palette } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { authService } from '../services/api'
 
 export const Settings = () => {
   const { user, updateProfileState } = useAuth()
+  const { theme, setTheme } = useTheme()
 
   const [fullName, setFullName] = useState(user?.full_name || '')
   const [phone, setPhone] = useState(user?.phone || '')
@@ -63,7 +65,55 @@ export const Settings = () => {
     <div className="space-y-8 max-w-3xl">
       <div className="border-b border-[#2B2A24] pb-5">
         <h1 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">Account Settings</h1>
-        <p className="text-xs text-[#A9A59A] mt-1">Manage profile details, phone number & security credentials</p>
+        <p className="text-xs text-[#A9A59A] mt-1">Manage profile details, theme appearance & security credentials</p>
+      </div>
+
+      {/* Theme & Appearance Section */}
+      <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl p-6 lg:p-8 space-y-4">
+        <h3 className="text-base font-bold text-[#F5F1E6] flex items-center gap-2">
+          <Palette className="w-5 h-5 text-[#D4AF37]" /> Interface Appearance
+        </h3>
+        <p className="text-xs text-[#A9A59A]">Choose your preferred theme mode for Finora</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          {/* Dark Theme Option */}
+          <button
+            type="button"
+            onClick={() => setTheme('dark')}
+            className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-3.5 ${
+              theme === 'dark'
+                ? 'bg-[#0B0B0A] border-[#D4AF37] shadow-lg shadow-[#D4AF37]/10'
+                : 'bg-[#0B0B0A]/50 border-[#2B2A24] hover:border-[#D4AF37]/40'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#171714] border border-[#2B2A24] flex items-center justify-center text-[#D4AF37]">
+              <Moon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#F5F1E6]">Dark Luxury</p>
+              <p className="text-[11px] text-[#A9A59A]">Black & Metallic Gold</p>
+            </div>
+          </button>
+
+          {/* Light Theme Option */}
+          <button
+            type="button"
+            onClick={() => setTheme('light')}
+            className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-3.5 ${
+              theme === 'light'
+                ? 'bg-[#F6F3EB] border-[#B8860B] shadow-lg shadow-[#B8860B]/10'
+                : 'bg-[#0B0B0A]/50 border-[#2B2A24] hover:border-[#D4AF37]/40'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#FAF6ED] border border-[#E2DBCB] flex items-center justify-center text-[#B8860B]">
+              <Sun className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#1F1C18]">Executive Beige</p>
+              <p className="text-[11px] text-[#78716C]">Warm Beige & Rich Gold</p>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Profile Form */}
@@ -190,3 +240,4 @@ export const Settings = () => {
     </div>
   )
 }
+
