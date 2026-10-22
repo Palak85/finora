@@ -24,6 +24,9 @@ import { AdvisorDashboard } from '../pages/AdvisorDashboard'
 import { AdminDashboard } from '../pages/AdminDashboard'
 import { NotFound } from '../pages/NotFound'
 
+import { WealthAnalyticsPage } from '../pages/WealthAnalyticsPage'
+import { AdvisorSuitePage } from '../pages/AdvisorSuitePage'
+
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
   if (loading) return <div className="p-12 text-center text-xs text-[#A9A59A]">Loading Finora Workspace...</div>
@@ -43,8 +46,10 @@ const RoleRoute = ({ children, allowedRoles }) => {
 export const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Home / Landing Page */}
+      {/* Public Home / Landing & Showcase Pages */}
       <Route path="/" element={<Home />} />
+      <Route path="/wealth-analytics" element={<WealthAnalyticsPage />} />
+      <Route path="/advisor-suite" element={<AdvisorSuitePage />} />
 
       {/* Public Auth Routes */}
       <Route element={<AuthLayout />}>

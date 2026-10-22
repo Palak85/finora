@@ -6,8 +6,8 @@ import { useAuth } from '../context/AuthContext'
 export const Login = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('customer@finora.com')
-  const [password, setPassword] = useState('Password123!')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -36,11 +36,6 @@ export const Login = () => {
     }
   }
 
-  const fillQuickDemo = (demoEmail, demoRole) => {
-    setEmail(demoEmail)
-    setPassword('Password123!')
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -55,41 +50,12 @@ export const Login = () => {
         <p className="text-xs text-[#A9A59A] mt-1">Access your Finora private wealth dashboard</p>
       </div>
 
-
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
-
-      {/* Quick Demo Credentials Switcher */}
-      <div className="p-3 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl space-y-2">
-        <p className="text-[10px] uppercase font-bold tracking-wider text-[#D4AF37]">Quick Demo Logins</p>
-        <div className="grid grid-cols-3 gap-1.5">
-          <button
-            type="button"
-            onClick={() => fillQuickDemo('customer@finora.com')}
-            className="px-2 py-1.5 bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37] text-[11px] font-semibold text-[#F5F1E6] rounded-xl transition-all"
-          >
-            Customer
-          </button>
-          <button
-            type="button"
-            onClick={() => fillQuickDemo('advisor@finora.com')}
-            className="px-2 py-1.5 bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37] text-[11px] font-semibold text-[#F5F1E6] rounded-xl transition-all"
-          >
-            Advisor
-          </button>
-          <button
-            type="button"
-            onClick={() => fillQuickDemo('admin@finora.com')}
-            className="px-2 py-1.5 bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37] text-[11px] font-semibold text-[#F5F1E6] rounded-xl transition-all"
-          >
-            Admin
-          </button>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

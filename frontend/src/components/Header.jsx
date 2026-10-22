@@ -3,37 +3,17 @@ import { Link } from 'react-router-dom'
 import { Bell, Search, User, Shield, LogOut, Sparkles, ChevronDown, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { notificationService } from '../services/api'
+import { useNotification } from '../context/NotificationContext'
 
 export const Header = ({ onOpenQuickAdd }) => {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const [unreadCount, setUnreadCount] = useState(0)
+  const { notifications, unreadCount, markAllAsRead } = useNotification()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false)
-  const [notifications, setNotifications] = useState([])
-
-  const fetchNotifs = async () => {
-    try {
-      const res = await notificationService.getNotifications()
-      if (res.data?.success) {
-        setNotifications(res.data.data)
-        setUnreadCount(res.data.unread_count || 0)
-      }
-    } catch (e) {
-      // Ignore
-    }
-  }
-
-  useEffect(() => {
-    fetchNotifs()
-  }, [])
 
   const handleMarkAllRead = async () => {
-    try {
-      await notificationService.markAllAsRead()
-      fetchNotifs()
-    } catch (e) {}
+    await markAllAsRead()
   }
 
   return (

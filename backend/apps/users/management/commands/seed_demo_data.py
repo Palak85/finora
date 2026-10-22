@@ -11,6 +11,7 @@ from apps.investments.models import Investment
 from apps.goals.models import Goal
 from apps.notifications.models import Notification
 from apps.audit.models import AuditLog
+from apps.users.provisioning import provision_user_real_data
 
 User = get_user_model()
 
@@ -68,7 +69,8 @@ class Command(BaseCommand):
             admin.save()
             self.stdout.write(self.style.SUCCESS('Created Admin: admin@finora.com / Password123!'))
 
-        # 2. Create Accounts for Customer
+        # 2. Provision Comprehensive Real Financial Data
+        provision_user_real_data(customer)
         acc_savings, _ = Account.objects.get_or_create(
             user=customer,
             account_name='HDFC Imperia Savings',

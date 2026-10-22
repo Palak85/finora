@@ -12,17 +12,22 @@ import {
   Activity,
   Award,
   Sparkles,
-  DollarSign
+  DollarSign,
+  Bell,
+  Radio,
+  CheckCircle2
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { dashboardService, analyticsService } from '../services/api'
+import { useNotification } from '../context/NotificationContext'
 import { formatCurrency, formatDate, maskAccountNumber } from '../utils/formatters'
 
 export const Dashboard = () => {
   const { refreshKey } = useOutletContext() || { refreshKey: 0 }
+  const { notifications, unreadCount, markAsRead } = useNotification()
   const [data, setData] = useState(null)
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -254,6 +259,66 @@ export const Dashboard = () => {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Real-Time Live Notification Feed Bar */}
+      <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl p-5 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#2B2A24]">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <h3 className="text-sm font-bold text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-2">
+              <Bell className="w-4 h-4 text-[#D4AF37]" /> Real-Time Security & Financial Telemetry
+            </h3>
+            {unreadCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#D4AF37] text-[#0B0B0A]">
+                {unreadCount} Unread
+              </span>
+            )}
+          </div>
+          <Link
+            to="/notifications"
+            className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-1"
+          >
+            All Notifications ({notifications.length}) →
+          </Link>
+        </div>
+
+        {notifications.length === 0 ? (
+          <p className="text-xs text-[#A9A59A] py-2">No active alerts. All systems and transactions operating smoothly.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {notifications.slice(0, 3).map((n) => (
+              <div
+                key={n.id}
+                className={`p-3.5 rounded-2xl border transition-all ${
+                  n.is_read
+                    ? 'bg-[#0B0B0A] border-[#2B2A24] text-[#A9A59A]'
+                    : 'bg-[#0B0B0A] border-[#D4AF37]/50 shadow-md shadow-[#D4AF37]/5'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#D4AF37]/15 text-[#D4AF37]">
+                    {n.notification_type}
+                  </span>
+                  {!n.is_read && (
+                    <button
+                      onClick={() => markAsRead(n.id)}
+                      className="text-[10px] font-semibold text-[#D4AF37] hover:underline flex items-center gap-1"
+                      title="Mark as read"
+                    >
+                      <CheckCircle2 className="w-3 h-3" /> Read
+                    </button>
+                  )}
+                </div>
+                <h4 className="text-xs font-bold text-[#F5F1E6] line-clamp-1">{n.title}</h4>
+                <p className="text-[11px] text-[#A9A59A] mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Grid: Bank Accounts & Recent Transactions */}

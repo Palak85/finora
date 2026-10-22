@@ -96,9 +96,15 @@ export const Home = () => {
           {/* Center Links */}
           <div className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#A9A59A]">
             <a href="#features" className="hover:text-[#D4AF37] transition-colors">Features</a>
-            <a href="#analytics" className="hover:text-[#D4AF37] transition-colors">Wealth Analytics</a>
+            <Link to="/wealth-analytics" className="hover:text-[#D4AF37] transition-colors flex items-center gap-1">
+              Wealth Analytics
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">NEW</span>
+            </Link>
             <a href="#security" className="hover:text-[#D4AF37] transition-colors">Security & Trust</a>
-            <a href="#solutions" className="hover:text-[#D4AF37] transition-colors">Advisor Suite</a>
+            <Link to="/advisor-suite" className="hover:text-[#D4AF37] transition-colors flex items-center gap-1">
+              Advisor Suite
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">PRO</span>
+            </Link>
           </div>
 
           {/* Right Action Buttons */}
@@ -551,7 +557,9 @@ export const Home = () => {
             <span>&copy; {new Date().getFullYear()} Finora Inc. All rights reserved.</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
+            <Link to="/wealth-analytics" className="hover:text-[#D4AF37]">Wealth Analytics</Link>
+            <Link to="/advisor-suite" className="hover:text-[#D4AF37]">Advisor Suite</Link>
             <Link to="/login" className="hover:text-[#D4AF37]">Login</Link>
             <Link to="/register" className="hover:text-[#D4AF37]">Register</Link>
             <a href="#features" className="hover:text-[#D4AF37]">Features</a>

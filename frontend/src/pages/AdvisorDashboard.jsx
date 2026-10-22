@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { UserCheck, Users, Eye, Sparkles, CheckCircle2 } from 'lucide-react'
+import { UserCheck, Users, Eye, Sparkles, CheckCircle2, Bell, Radio } from 'lucide-react'
 import { authService, dashboardService } from '../services/api'
+import { useNotification } from '../context/NotificationContext'
 import { formatCurrency } from '../utils/formatters'
 
 export const AdvisorDashboard = () => {
+  const { notifications, unreadCount, markAsRead } = useNotification()
   const [users, setUsers] = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
   const [clientData, setClientData] = useState(null)
@@ -49,6 +51,27 @@ export const AdvisorDashboard = () => {
         </span>
         <h1 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">Client Wealth Portfolio Review</h1>
         <p className="text-xs text-[#A9A59A]">Review client analytics, budget compliance & submit recommendations</p>
+      </div>
+
+      {/* Real-time Advisor Alerts Banner */}
+      <div className="p-4 bg-[#171714] border border-[#2B2A24] rounded-2xl flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <span className="text-xs font-bold text-[#F5F1E6] flex items-center gap-1.5">
+            <Bell className="w-3.5 h-3.5 text-[#D4AF37]" /> Advisor Live Telemetry:
+          </span>
+          <span className="text-xs text-[#A9A59A]">
+            {notifications.length > 0 ? `${notifications[0].title} — ${notifications[0].message}` : 'All client portfolios are within risk thresholds.'}
+          </span>
+        </div>
+        {unreadCount > 0 && (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37] text-[#0B0B0A] shrink-0">
+            {unreadCount} Unread Alerts
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -8,6 +8,7 @@ from .serializers import (
     ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 )
 from .permissions import IsAdminUser, IsAdvisor
+from .provisioning import provision_user_real_data
 
 User = get_user_model()
 
@@ -18,6 +19,8 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            # Provision realistic real financial portfolio for customer
+            provision_user_real_data(user)
             refresh = RefreshToken.for_user(user)
             return Response({
                 'success': True,

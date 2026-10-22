@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { ShieldCheck, Users, FileText, Trash2, CheckCircle2, Shield } from 'lucide-react'
+import { ShieldCheck, Users, FileText, Trash2, CheckCircle2, Shield, Bell, Radio } from 'lucide-react'
 import { authService, auditService } from '../services/api'
+import { useNotification } from '../context/NotificationContext'
 import { formatDate } from '../utils/formatters'
 
 export const AdminDashboard = () => {
+  const { notifications, unreadCount } = useNotification()
   const [users, setUsers] = useState([])
   const [auditLogs, setAuditLogs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,9 +73,30 @@ export const AdminDashboard = () => {
               activeTab === 'audit' ? 'bg-[#D4AF37] text-[#0B0B0A]' : 'text-[#A9A59A]'
             }`}
           >
-            Audit Logs ({auditLogs.length})
+            Audit Trail ({auditLogs.length})
           </button>
         </div>
+      </div>
+
+      {/* Real-time Admin Telemetry & Security Alerts */}
+      <div className="p-4 bg-[#171714] border border-[#2B2A24] rounded-2xl flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <span className="text-xs font-bold text-[#F5F1E6] flex items-center gap-1.5">
+            <Bell className="w-3.5 h-3.5 text-[#D4AF37]" /> Security Telemetry Live:
+          </span>
+          <span className="text-xs text-[#A9A59A]">
+            Audit logs and authentication security layers actively monitoring {users.length} registered accounts.
+          </span>
+        </div>
+        {unreadCount > 0 && (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37] text-[#0B0B0A] shrink-0">
+            {unreadCount} Active Signals
+          </span>
+        )}
       </div>
 
       {activeTab === 'users' ? (
