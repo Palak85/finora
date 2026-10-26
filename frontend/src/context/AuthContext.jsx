@@ -32,29 +32,45 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const login = async (email, password) => {
-    const res = await authService.login({ email, password })
-    if (res.data?.success) {
-      const { user: userData, tokens } = res.data.data
-      localStorage.setItem('access_token', tokens.access)
-      localStorage.setItem('refresh_token', tokens.refresh)
-      localStorage.setItem('user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true, user: userData }
+    try {
+      const res = await authService.login({ email, password })
+      if (res.data?.success) {
+        const { user: userData, tokens } = res.data.data
+        localStorage.setItem('access_token', tokens.access)
+        localStorage.setItem('refresh_token', tokens.refresh)
+        localStorage.setItem('user', JSON.stringify(userData))
+        setUser(userData)
+        return { success: true, user: userData }
+      }
+      return { success: false, message: res.data?.message || 'Login failed' }
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        (err.response ? 'Invalid email or password.' : 'Cannot connect to backend server. Ensure Django is running.')
+      return { success: false, message }
     }
-    return { success: false, message: res.data?.message || 'Login failed' }
   }
 
   const register = async (formData) => {
-    const res = await authService.register(formData)
-    if (res.data?.success) {
-      const { user: userData, tokens } = res.data.data
-      localStorage.setItem('access_token', tokens.access)
-      localStorage.setItem('refresh_token', tokens.refresh)
-      localStorage.setItem('user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true, user: userData }
+    try {
+      const res = await authService.register(formData)
+      if (res.data?.success) {
+        const { user: userData, tokens } = res.data.data
+        localStorage.setItem('access_token', tokens.access)
+        localStorage.setItem('refresh_token', tokens.refresh)
+        localStorage.setItem('user', JSON.stringify(userData))
+        setUser(userData)
+        return { success: true, user: userData }
+      }
+      return { success: false, message: res.data?.message || 'Registration failed', errors: res.data?.errors }
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        'Registration failed. Please check your details.'
+      return { success: false, message, errors: err.response?.data?.errors }
     }
-    return { success: false, message: res.data?.message || 'Registration failed', errors: res.data?.errors }
   }
 
   const logout = async () => {
