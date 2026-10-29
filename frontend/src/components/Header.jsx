@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, Search, User, Shield, LogOut, Sparkles, ChevronDown, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +14,29 @@ export const Header = ({ onOpenQuickAdd }) => {
 
   const handleMarkAllRead = async () => {
     await markAllAsRead()
+  }
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'Salary':
+        return '💰'
+      case 'Transaction':
+        return '💳'
+      case 'Investment':
+        return '📈'
+      case 'Budget Alert':
+        return '🚨'
+      case 'Goal':
+        return '🎯'
+      case 'Security':
+        return '🛡️'
+      case 'Account':
+        return '🏦'
+      case 'Bill Reminder':
+        return '📅'
+      default:
+        return '🔔'
+    }
   }
 
   return (
@@ -43,7 +66,7 @@ export const Header = ({ onOpenQuickAdd }) => {
         {/* Theme Toggle Button (Sun/Moon) */}
         <button
           onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to Beige Light Mode' : 'Switch to Dark Mode'}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           className="p-2.5 rounded-xl bg-[#0B0B0A] border border-[#2B2A24] text-[#A9A59A] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 active:scale-95 transition-all flex items-center justify-center"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4 text-[#D4AF37]" /> : <Moon className="w-4 h-4 text-[#D4AF37]" />}
@@ -51,15 +74,15 @@ export const Header = ({ onOpenQuickAdd }) => {
 
         {/* Notifications Button */}
         <div className="relative">
-
           <button
             onClick={() => setNotifDrawerOpen(!notifDrawerOpen)}
             className="p-2.5 rounded-xl bg-[#0B0B0A] border border-[#2B2A24] text-[#A9A59A] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 relative transition-all"
+            title="Notifications & Audit Trail"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#D4AF37] text-[#0B0B0A] font-extrabold text-[10px] rounded-full flex items-center justify-center animate-pulse">
-                {unreadCount}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
@@ -69,7 +92,7 @@ export const Header = ({ onOpenQuickAdd }) => {
             <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#171714] border border-[#2B2A24] rounded-2xl shadow-2xl z-50 overflow-hidden">
               <div className="p-4 border-b border-[#2B2A24] flex items-center justify-between bg-[#0B0B0A]">
                 <h3 className="text-sm font-bold text-[#F5F1E6] flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-[#D4AF37]" /> Notifications
+                  <Bell className="w-4 h-4 text-[#D4AF37]" /> Live Activities
                 </h3>
                 {unreadCount > 0 && (
                   <button
@@ -83,23 +106,30 @@ export const Header = ({ onOpenQuickAdd }) => {
 
               <div className="max-h-80 overflow-y-auto divide-y divide-[#2B2A24]">
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-[#A9A59A]">No recent notifications.</div>
+                  <div className="p-6 text-center text-xs text-[#A9A59A]">No recent activities or alerts.</div>
                 ) : (
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-3.5 text-xs transition-colors ${
-                        !n.is_read ? 'bg-[#D4AF37]/5 border-l-2 border-[#D4AF37]' : ''
+                      className={`p-3.5 text-xs transition-colors flex items-start gap-3 ${
+                        !n.is_read ? 'bg-[#D4AF37]/5 border-l-2 border-[#D4AF37]' : 'hover:bg-[#21201B]/40'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-[#D4AF37]">{n.notification_type}</span>
-                        <span className="text-[10px] text-[#A9A59A]">
-                          {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                      <div className="w-7 h-7 rounded-lg bg-[#0B0B0A] border border-[#2B2A24] flex items-center justify-center shrink-0 text-sm">
+                        {getNotificationIcon(n.notification_type)}
                       </div>
-                      <p className="font-medium text-[#F5F1E6] mb-0.5">{n.title}</p>
-                      <p className="text-[#A9A59A] text-[11px] leading-relaxed">{n.message}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-semibold text-[#D4AF37] uppercase text-[10px]">
+                            {n.notification_type}
+                          </span>
+                          <span className="text-[10px] text-[#A9A59A]">
+                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p className="font-medium text-[#F5F1E6] mb-0.5 truncate">{n.title}</p>
+                        <p className="text-[#A9A59A] text-[11px] leading-relaxed line-clamp-2">{n.message}</p>
+                      </div>
                     </div>
                   ))
                 )}
@@ -111,7 +141,7 @@ export const Header = ({ onOpenQuickAdd }) => {
                   onClick={() => setNotifDrawerOpen(false)}
                   className="text-xs font-semibold text-[#D4AF37] hover:underline"
                 >
-                  View All Notifications
+                  View All Activity Logs →
                 </Link>
               </div>
             </div>

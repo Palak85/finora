@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     'apps.budgets',
     'apps.investments',
     'apps.goals',
-    'apps.notifications',
+    'apps.notifications.apps.NotificationsConfig',
     'apps.reports',
     'apps.analytics',
     'apps.dashboard',

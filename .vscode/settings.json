@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "pyrefly.searchPath": [
+    "${workspaceFolder}/backend"
+  ],
+  "pyrefly.pythonInterpreterPath": "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe"
+}

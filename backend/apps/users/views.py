@@ -9,8 +9,18 @@ from .serializers import (
 )
 from .permissions import IsAdminUser, IsAdvisor
 from .provisioning import provision_user_real_data
+from apps.notifications.models import Notification
+from apps.audit.models import AuditLog
 
 User = get_user_model()
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -19,8 +29,25 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            ip = get_client_ip(request)
+
             # Provision realistic real financial portfolio for customer
             provision_user_real_data(user)
+
+            # Welcome notification & Audit log
+            Notification.objects.create(
+                user=user,
+                title='👋 Welcome to Finora Wealth!',
+                message='Your private wealth portfolio has been established. You are ready to track accounts and investments.',
+                notification_type='System'
+            )
+            AuditLog.objects.create(
+                user=user,
+                action='USER_REGISTERED',
+                ip_address=ip,
+                details={'email': user.email, 'role': user.role}
+            )
+
             refresh = RefreshToken.for_user(user)
             return Response({
                 'success': True,
@@ -39,6 +66,7 @@ class RegisterView(APIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -56,6 +84,22 @@ class LoginView(APIView):
                         'message': 'User account is deactivated.'
                     }, status=status.HTTP_403_FORBIDDEN)
                 
+                ip = get_client_ip(request)
+
+                # Log activity & trigger security notification
+                AuditLog.objects.create(
+                    user=user,
+                    action='USER_LOGIN',
+                    ip_address=ip,
+                    details={'email': user.email, 'role': user.role}
+                )
+                Notification.objects.create(
+                    user=user,
+                    title='🔐 Security: Sign-In Detected',
+                    message=f'Active session established from {ip or "client"}.',
+                    notification_type='Security'
+                )
+
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     'success': True,
@@ -80,6 +124,7 @@ class LoginView(APIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -89,15 +134,23 @@ class LogoutView(APIView):
             if refresh_token:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
+            
+            ip = get_client_ip(request)
+            AuditLog.objects.create(
+                user=request.user,
+                action='USER_LOGOUT',
+                ip_address=ip
+            )
             return Response({
                 'success': True,
                 'message': 'Logged out successfully.'
             }, status=status.HTTP_200_OK)
-        except Exception as e:
+        except Exception:
             return Response({
                 'success': True,
                 'message': 'Logged out.'
             }, status=status.HTTP_200_OK)
+
 
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -113,6 +166,21 @@ class ProfileView(APIView):
         serializer = UserSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            ip = get_client_ip(request)
+
+            Notification.objects.create(
+                user=request.user,
+                title='👤 Profile Updated',
+                message='Your account profile information was successfully updated.',
+                notification_type='System'
+            )
+            AuditLog.objects.create(
+                user=request.user,
+                action='PROFILE_UPDATED',
+                ip_address=ip,
+                details={'email': request.user.email}
+            )
+
             return Response({
                 'success': True,
                 'message': 'Profile updated successfully.',
@@ -123,6 +191,7 @@ class ProfileView(APIView):
             'message': 'Update failed.',
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ChangePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -139,6 +208,21 @@ class ChangePasswordView(APIView):
 
             user.set_password(serializer.validated_data['new_password'])
             user.save()
+            ip = get_client_ip(request)
+
+            Notification.objects.create(
+                user=user,
+                title='🛡️ Security: Password Changed',
+                message='Your account security password was updated successfully.',
+                notification_type='Security'
+            )
+            AuditLog.objects.create(
+                user=user,
+                action='PASSWORD_CHANGED',
+                ip_address=ip,
+                details={'email': user.email}
+            )
+
             return Response({
                 'success': True,
                 'message': 'Password updated successfully.'
@@ -149,6 +233,7 @@ class ChangePasswordView(APIView):
             'message': 'Password change failed.',
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ForgotPasswordView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -169,6 +254,7 @@ class ForgotPasswordView(APIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ResetPasswordView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -180,6 +266,19 @@ class ResetPasswordView(APIView):
                 user = User.objects.get(email=email)
                 user.set_password(serializer.validated_data['new_password'])
                 user.save()
+                
+                Notification.objects.create(
+                    user=user,
+                    title='🛡️ Security: Password Reset',
+                    message='Your account password was reset successfully.',
+                    notification_type='Security'
+                )
+                AuditLog.objects.create(
+                    user=user,
+                    action='PASSWORD_RESET',
+                    details={'email': user.email}
+                )
+
                 return Response({
                     'success': True,
                     'message': 'Password reset successful. You can now login.'
@@ -195,6 +294,7 @@ class ResetPasswordView(APIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserListView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser | IsAdvisor]
     serializer_class = UserSerializer
@@ -209,6 +309,7 @@ class UserListView(generics.ListCreateAPIView):
             'success': True,
             'data': serializer.data
         })
+
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]

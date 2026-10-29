@@ -4,13 +4,19 @@ import { Sidebar } from '../components/Sidebar'
 import { Header } from '../components/Header'
 import { MobileNav } from '../components/MobileNav'
 import { QuickAddModal } from '../components/QuickAddModal'
+import { useNotification } from '../context/NotificationContext'
 
 export const AppLayout = () => {
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const { refreshNotifications } = useNotification()
 
   const handleQuickAddSuccess = () => {
     setRefreshKey((prev) => prev + 1)
+    if (refreshNotifications) {
+      // Trigger instant refresh of notifications to pop up live alert
+      setTimeout(() => refreshNotifications(), 250)
+    }
   }
 
   return (

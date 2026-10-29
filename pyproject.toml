@@ -1,0 +1,14 @@
+[tool.pyrefly]
+search-path = ["backend"]
+python-interpreter-path = "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe"
+
+[tool.pyrefly.errors]
+missing-import = "ignore"
+missing-attribute = "ignore"
+unknown-attribute-access = "ignore"
+
+[tool.pyright]
+include = ["backend"]
+extraPaths = ["backend"]
+venvPath = "C:\\Users\\91790\\Desktop\\django"
+venv = "myenv"

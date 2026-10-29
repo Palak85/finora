@@ -1,0 +1,7 @@
+search-path = ["backend"]
+python-interpreter-path = "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe"
+
+[errors]
+missing-import = "ignore"
+missing-attribute = "ignore"
+unknown-attribute-access = "ignore"

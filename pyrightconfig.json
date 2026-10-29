@@ -1,0 +1,11 @@
+{
+  "include": [
+    "backend"
+  ],
+  "extraPaths": [
+    "backend"
+  ],
+  "venvPath": "C:\\Users\\91790\\Desktop\\django",
+  "venv": "myenv"
+}
+

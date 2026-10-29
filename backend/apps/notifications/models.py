@@ -9,6 +9,9 @@ class Notification(models.Model):
         ('Investment', 'Investment'),
         ('Security', 'Security'),
         ('System', 'System'),
+        ('Transaction', 'Transaction'),
+        ('Account', 'Account'),
+        ('Goal', 'Goal'),
     )
 
     user = models.ForeignKey(
@@ -22,6 +25,8 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = models.Manager()
 
     class Meta:
         db_table = 'notifications'

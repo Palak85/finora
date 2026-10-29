@@ -13,6 +13,8 @@ class AuditLog(models.Model):
     details = models.JSONField(default=dict, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = 'audit_logs'
         ordering = ['-timestamp']

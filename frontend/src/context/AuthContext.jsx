@@ -10,6 +10,22 @@ export const AuthProvider = ({ children }) => {
   })
   const [loading, setLoading] = useState(true)
 
+  const logout = async () => {
+    try {
+      const refresh = localStorage.getItem('refresh_token')
+      if (refresh) {
+        await authService.logout({ refresh })
+      }
+    } catch (e) {
+      // Ignore logout API failures
+    } finally {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user')
+      setUser(null)
+    }
+  }
+
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('access_token')
@@ -70,22 +86,6 @@ export const AuthProvider = ({ children }) => {
         err.response?.data?.detail ||
         'Registration failed. Please check your details.'
       return { success: false, message, errors: err.response?.data?.errors }
-    }
-  }
-
-  const logout = async () => {
-    try {
-      const refresh = localStorage.getItem('refresh_token')
-      if (refresh) {
-        await authService.logout({ refresh })
-      }
-    } catch (e) {
-      // Ignore logout API failures
-    } finally {
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('user')
-      setUser(null)
     }
   }
 
