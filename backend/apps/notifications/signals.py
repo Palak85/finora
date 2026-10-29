@@ -83,14 +83,8 @@ def handle_transaction_saved(sender, instance, created, **kwargs):
                         message=f"You have spent ₹{total_spent:,.2f}, surpassing your ₹{budget.monthly_limit:,.2f} limit for {instance.category}.",
                         notification_type='Budget Alert'
                     )
-                elif total_spent >= (budget.monthly_limit * Decimal('0.85')):
-                    pct = int((total_spent / budget.monthly_limit) * 100)
-                    Notification.objects.create(
-                        user=instance.user,
-                        title=f"⚠️ Budget Warning: {instance.category} ({pct}% reached)",
-                        message=f"You have consumed {pct}% (₹{total_spent:,.2f}) of your ₹{budget.monthly_limit:,.2f} monthly limit for {instance.category}.",
-                        notification_type='Budget Alert'
-                    )
+               
+               
 
         # Low account balance alert
         if instance.account and instance.account.balance < Decimal('2000.00') and instance.account.account_type in ['Savings', 'Current', 'Salary']:
