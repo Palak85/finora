@@ -16,7 +16,6 @@ import {
   Users,
   HeartPulse,
   LogOut,
-  Sparkles
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -54,7 +53,7 @@ export const Sidebar = () => {
       {/* Brand Header */}
       <div className="p-6 flex items-center gap-3 border-b border-[#2B2A24]">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
-          <Sparkles className="w-6 h-6 text-[#0B0B0A]" />
+          <Wallet className="w-6 h-6 text-[#0B0B0A]" />
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-wider text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-1.5">

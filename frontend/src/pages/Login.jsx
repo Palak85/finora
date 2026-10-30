@@ -58,37 +58,37 @@ export const Login = () => {
       </div>
 
       {/* Demo Credentials Quick Fill */}
-      <div className="p-3.5 bg-[#171714] border border-[#2B2A24] rounded-xl space-y-2">
-        <span className="text-[11px] font-semibold tracking-wider uppercase text-[#A9A59A] block">
-          ⚡ One-Click Demo Logins
+      <div className="p-3.5 bg-[#0B0B0A]/60 border border-[#2B2A24] rounded-2xl space-y-2.5">
+        <span className="text-[11px] font-bold tracking-wider uppercase text-[#D4AF37] flex items-center gap-1.5">
+          <span>⚡</span> One-Click Demo Logins
         </span>
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => handleDemoFill('customer@finora.com', 'Password123!')}
-            className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-[#22211C] hover:bg-[#2F2E27] hover:border-[#D4AF37]/50 border border-[#2B2A24] rounded-lg text-xs font-medium text-[#F5F1E6] transition-all"
+            className="flex items-center justify-center gap-1.5 py-2 px-2 bg-[#171714] hover:bg-[#21201B] border border-[#2B2A24] hover:border-[#D4AF37]/60 rounded-xl text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all cursor-pointer shadow-sm active:scale-95 group"
             title="Alex Mercer (Customer)"
           >
-            <UserCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Customer</span>
+            <UserCheck className="w-4 h-4 text-[#D4AF37] group-hover:scale-110 transition-transform shrink-0" />
+            <span className="font-semibold">Customer</span>
           </button>
           <button
             type="button"
             onClick={() => handleDemoFill('advisor@finora.com', 'Password123!')}
-            className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-[#22211C] hover:bg-[#2F2E27] hover:border-[#D4AF37]/50 border border-[#2B2A24] rounded-lg text-xs font-medium text-[#F5F1E6] transition-all"
+            className="flex items-center justify-center gap-1.5 py-2 px-2 bg-[#171714] hover:bg-[#21201B] border border-[#2B2A24] hover:border-[#D4AF37]/60 rounded-xl text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all cursor-pointer shadow-sm active:scale-95 group"
             title="Elena Vance (Advisor)"
           >
-            <Briefcase className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Advisor</span>
+            <Briefcase className="w-4 h-4 text-[#D4AF37] group-hover:scale-110 transition-transform shrink-0" />
+            <span className="font-semibold">Advisor</span>
           </button>
           <button
             type="button"
             onClick={() => handleDemoFill('admin@finora.com', 'Password123!')}
-            className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-[#22211C] hover:bg-[#2F2E27] hover:border-[#D4AF37]/50 border border-[#2B2A24] rounded-lg text-xs font-medium text-[#F5F1E6] transition-all"
+            className="flex items-center justify-center gap-1.5 py-2 px-2 bg-[#171714] hover:bg-[#21201B] border border-[#2B2A24] hover:border-[#D4AF37]/60 rounded-xl text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all cursor-pointer shadow-sm active:scale-95 group"
             title="System Admin"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Admin</span>
+            <ShieldCheck className="w-4 h-4 text-[#D4AF37] group-hover:scale-110 transition-transform shrink-0" />
+            <span className="font-semibold">Admin</span>
           </button>
         </div>
       </div>

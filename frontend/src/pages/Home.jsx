@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import CountUp from 'react-countup'
 import { useInView } from 'react-intersection-observer'
 import {
-  Sparkles,
   ShieldCheck,
   TrendingUp,
   ArrowRight,
@@ -83,7 +82,7 @@ export const Home = () => {
               transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20"
             >
-              <Sparkles className="w-5 h-5 text-[#0B0B0A]" />
+              <Wallet className="w-5 h-5 text-[#0B0B0A]" />
             </motion.div>
             <div>
               <span className="text-xl font-bold font-['Space_Grotesk'] tracking-wider text-[#F5F1E6] flex items-center gap-1.5">
@@ -551,7 +550,7 @@ export const Home = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-[#A9A59A]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center text-[#0B0B0A]">
-              <Sparkles className="w-4 h-4" />
+              <Wallet className="w-4 h-4" />
             </div>
             <span className="font-bold text-[#F5F1E6] font-['Space_Grotesk'] text-sm tracking-wider">FINORA</span>
             <span>&copy; {new Date().getFullYear()} Finora Inc. All rights reserved.</span>
@@ -570,4 +569,3 @@ export const Home = () => {
     </div>
   )
 }
-

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Sparkles,
+  Wallet,
   Users,
   ShieldCheck,
   TrendingUp,
@@ -73,7 +73,7 @@ export const AdvisorSuitePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
-              <Sparkles className="w-5 h-5 text-[#0B0B0A]" />
+              <Wallet className="w-5 h-5 text-[#0B0B0A]" />
             </div>
             <div>
               <span className="text-xl font-bold font-['Space_Grotesk'] tracking-wider text-[#F5F1E6] flex items-center gap-1.5">

@@ -192,3 +192,10 @@
 .light ::-webkit-scrollbar-thumb:hover {
   background: #B8860B;
 }
+
+.light .bg-\[\#22211C\] {
+  background-color: #FFFFFF !important;
+}
+.light .hover\:bg-\[\#2F2E27\]:hover {
+  background-color: #F3EFE4 !important;
+}

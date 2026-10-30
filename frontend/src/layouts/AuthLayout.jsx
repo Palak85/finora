@@ -1,6 +1,6 @@
 import React from 'react'
 import { Outlet, Link } from 'react-router-dom'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { Wallet, ArrowLeft } from 'lucide-react'
 
 export const AuthLayout = () => {
 
@@ -14,7 +14,7 @@ export const AuthLayout = () => {
       <header className="p-6 lg:px-12 flex items-center justify-between z-10">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-5 h-5 text-[#0B0B0A]" />
+            <Wallet className="w-5 h-5 text-[#0B0B0A]" />
           </div>
           <div>
             <span className="text-xl font-bold font-['Space_Grotesk'] tracking-wider text-[#F5F1E6] flex items-center gap-1.5">
