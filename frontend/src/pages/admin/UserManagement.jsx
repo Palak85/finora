@@ -6,16 +6,11 @@ import {
   UserPlus,
   Trash2,
   CheckCircle2,
-  XCircle,
-  Eye,
-  Edit3,
   ShieldAlert,
-  ShieldCheck,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   X,
-  Lock,
   RefreshCw
 } from 'lucide-react'
 import { adminService } from '../../services/api'
@@ -39,10 +34,7 @@ export const UserManagement = () => {
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [viewModalUser, setViewModalUser] = useState(null)
-  const [editModalUser, setEditModalUser] = useState(null)
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null)
-  const [statusConfirmUser, setStatusConfirmUser] = useState(null)
 
   // Form states
   const [createForm, setCreateForm] = useState({
@@ -148,32 +140,6 @@ export const UserManagement = () => {
     }
   }
 
-  // Handle Toggle Active/Inactive
-  const handleToggleStatus = async () => {
-    if (!statusConfirmUser) return
-    if (statusConfirmUser.id === currentUser?.id) {
-      showToast('Security Violation: You cannot deactivate your own account.', 'error')
-      setStatusConfirmUser(null)
-      return
-    }
-
-    const newStatus = !statusConfirmUser.is_active
-    try {
-      const res = await adminService.updateUser(statusConfirmUser.id, { is_active: newStatus })
-      if (res.data?.success) {
-        showToast(
-          `User ${statusConfirmUser.email} has been ${newStatus ? 'activated' : 'deactivated'}.`,
-          'success'
-        )
-        setStatusConfirmUser(null)
-        fetchUsers()
-      }
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to update status.', 'error')
-      setStatusConfirmUser(null)
-    }
-  }
-
   // Handle Delete User
   const handleDeleteUser = async () => {
     if (!deleteConfirmUser) return
@@ -193,27 +159,6 @@ export const UserManagement = () => {
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to delete user.', 'error')
       setDeleteConfirmUser(null)
-    }
-  }
-
-  // Handle Edit User Save
-  const handleSaveEdit = async (e) => {
-    e.preventDefault()
-    if (!editModalUser) return
-    try {
-      const res = await adminService.updateUser(editModalUser.id, {
-        full_name: editModalUser.full_name,
-        phone: editModalUser.phone,
-        role: editModalUser.role,
-        is_active: editModalUser.is_active,
-      })
-      if (res.data?.success) {
-        showToast('User details updated successfully.', 'success')
-        setEditModalUser(null)
-        fetchUsers()
-      }
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to save changes.', 'error')
     }
   }
 
@@ -242,7 +187,7 @@ export const UserManagement = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-extrabold bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 flex items-center gap-1">
-              <Users className="w-3 h-3" /> Access &amp; Identity Control
+              <Users className="w-3 h-3" /> Access & Identity Control
             </span>
           </div>
           <h1 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
@@ -437,50 +382,6 @@ export const UserManagement = () => {
                       {/* Actions */}
                       <td className="py-4 px-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* View details */}
-                          <button
-                            onClick={() => setViewModalUser(u)}
-                            className="p-1.5 text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#0B0B0A] rounded-lg transition-all"
-                            title="View user details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-
-                          {/* Edit permitted details */}
-                          <button
-                            onClick={() => setEditModalUser({ ...u })}
-                            className="p-1.5 text-[#A9A59A] hover:text-blue-400 hover:bg-[#0B0B0A] rounded-lg transition-all"
-                            title="Edit user details"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-
-                          {/* Activate / Deactivate Toggle */}
-                          <button
-                            onClick={() => setStatusConfirmUser(u)}
-                            disabled={isCurrentAdmin}
-                            className={`p-1.5 rounded-lg transition-all ${
-                              isCurrentAdmin
-                                ? 'opacity-30 cursor-not-allowed text-[#A9A59A]'
-                                : u.is_active
-                                ? 'text-amber-400/80 hover:text-amber-400 hover:bg-[#0B0B0A]'
-                                : 'text-emerald-400/80 hover:text-emerald-400 hover:bg-[#0B0B0A]'
-                            }`}
-                            title={
-                              isCurrentAdmin
-                                ? 'Cannot deactivate self'
-                                : u.is_active
-                                ? 'Deactivate account'
-                                : 'Activate account'
-                            }
-                          >
-                            {u.is_active ? (
-                              <XCircle className="w-4 h-4" />
-                            ) : (
-                              <CheckCircle2 className="w-4 h-4" />
-                            )}
-                          </button>
-
                           {/* Delete Account */}
                           <button
                             onClick={() => setDeleteConfirmUser(u)}
@@ -654,219 +555,7 @@ export const UserManagement = () => {
         </div>
       )}
 
-      {/* 2. VIEW USER DETAILS MODAL */}
-      {viewModalUser && (
-        <div className="fixed inset-0 bg-[#0B0B0A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2B2A24] pb-3">
-              <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-2">
-                <Eye className="w-4 h-4 text-[#D4AF37]" /> User Profile &amp; Metadata
-              </h3>
-              <button
-                onClick={() => setViewModalUser(null)}
-                className="p-1 rounded-full bg-[#0B0B0A] text-[#A9A59A] hover:text-[#F5F1E6]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] font-bold text-lg flex items-center justify-center border border-[#D4AF37]/30">
-                  {viewModalUser.full_name ? viewModalUser.full_name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-[#F5F1E6]">{viewModalUser.full_name}</h4>
-                  <p className="text-[#A9A59A] text-[11px]">{viewModalUser.email}</p>
-                  <span className="mt-1 inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-[#D4AF37]/20 text-[#D4AF37]">
-                    {viewModalUser.role}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between py-1.5 border-b border-[#2B2A24]">
-                  <span className="text-[#A9A59A]">User ID</span>
-                  <span className="font-mono text-[#F5F1E6]">#{viewModalUser.id}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-[#2B2A24]">
-                  <span className="text-[#A9A59A]">Account Status</span>
-                  <span className={viewModalUser.is_active ? 'text-emerald-400 font-semibold' : 'text-zinc-400 font-semibold'}>
-                    {viewModalUser.is_active ? 'Active' : 'Deactivated'}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-[#2B2A24]">
-                  <span className="text-[#A9A59A]">Phone Number</span>
-                  <span className="text-[#F5F1E6]">{viewModalUser.phone || 'Not provided'}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-[#2B2A24]">
-                  <span className="text-[#A9A59A]">Registration Date</span>
-                  <span className="text-[#F5F1E6]">{formatDate(viewModalUser.date_joined)}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-[#2B2A24]">
-                  <span className="text-[#A9A59A]">Last Login</span>
-                  <span className="text-[#F5F1E6]">
-                    {viewModalUser.last_login ? formatDate(viewModalUser.last_login) : 'Never'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-[#2B2A24]">
-              <button
-                onClick={() => setViewModalUser(null)}
-                className="px-4 py-2 bg-[#D4AF37] text-[#0B0B0A] font-bold rounded-xl text-xs hover:brightness-110"
-              >
-                Close Details
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. EDIT USER DETAILS MODAL */}
-      {editModalUser && (
-        <div className="fixed inset-0 bg-[#0B0B0A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2B2A24] pb-3">
-              <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-blue-400" /> Edit Permitted Details
-              </h3>
-              <button
-                onClick={() => setEditModalUser(null)}
-                className="p-1 rounded-full bg-[#0B0B0A] text-[#A9A59A] hover:text-[#F5F1E6]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-[#A9A59A] font-semibold mb-1">Email (Permanent)</label>
-                <input
-                  type="email"
-                  value={editModalUser.email}
-                  disabled
-                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#A9A59A] opacity-60 cursor-not-allowed outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#A9A59A] font-semibold mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={editModalUser.full_name}
-                  onChange={(e) => setEditModalUser({ ...editModalUser, full_name: e.target.value })}
-                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] outline-none focus:border-[#D4AF37]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#A9A59A] font-semibold mb-1">Phone</label>
-                <input
-                  type="text"
-                  value={editModalUser.phone || ''}
-                  onChange={(e) => setEditModalUser({ ...editModalUser, phone: e.target.value })}
-                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#A9A59A] font-semibold mb-1">Role</label>
-                <select
-                  value={editModalUser.role}
-                  disabled={editModalUser.id === currentUser?.id}
-                  onChange={(e) => setEditModalUser({ ...editModalUser, role: e.target.value })}
-                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] outline-none focus:border-[#D4AF37]"
-                >
-                  <option value="CUSTOMER">Customer</option>
-                  <option value="FINANCIAL_ADVISOR">Financial Advisor</option>
-                  <option value="ADMINISTRATOR">Administrator</option>
-                </select>
-                {editModalUser.id === currentUser?.id && (
-                  <p className="text-[10px] text-red-400 mt-1">Cannot alter your own Administrator role.</p>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editModalUser.is_active}
-                    disabled={editModalUser.id === currentUser?.id}
-                    onChange={(e) => setEditModalUser({ ...editModalUser, is_active: e.target.checked })}
-                    className="accent-[#D4AF37] w-4 h-4 rounded"
-                  />
-                  <span className="text-[#F5F1E6] font-semibold">Account Active</span>
-                </label>
-                {editModalUser.id === currentUser?.id && (
-                  <p className="text-[10px] text-red-400 mt-1">Cannot deactivate your own account.</p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2B2A24]">
-                <button
-                  type="button"
-                  onClick={() => setEditModalUser(null)}
-                  className="px-3 py-2 bg-[#0B0B0A] border border-[#2B2A24] rounded-xl text-[#A9A59A] hover:text-[#F5F1E6]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#D4AF37] text-[#0B0B0A] font-bold rounded-xl hover:brightness-110"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 4. CONFIRM STATUS TOGGLE MODAL */}
-      {statusConfirmUser && (
-        <div className="fixed inset-0 bg-[#0B0B0A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-amber-400">
-              <AlertTriangle className="w-6 h-6 shrink-0" />
-              <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk']">
-                Confirm Status Change
-              </h3>
-            </div>
-            <p className="text-xs text-[#A9A59A] leading-relaxed">
-              Are you sure you want to{' '}
-              <span className="font-bold text-[#F5F1E6]">
-                {statusConfirmUser.is_active ? 'deactivate' : 'activate'}
-              </span>{' '}
-              the account for <span className="text-[#D4AF37] font-semibold">{statusConfirmUser.email}</span>?
-              {statusConfirmUser.is_active && ' They will be immediately blocked from signing in.'}
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2B2A24]">
-              <button
-                onClick={() => setStatusConfirmUser(null)}
-                className="px-3 py-1.5 bg-[#0B0B0A] border border-[#2B2A24] rounded-xl text-xs text-[#A9A59A] hover:text-[#F5F1E6]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleToggleStatus}
-                className={`px-4 py-1.5 rounded-xl text-xs font-bold ${
-                  statusConfirmUser.is_active
-                    ? 'bg-amber-500 text-[#0B0B0A] hover:brightness-110'
-                    : 'bg-emerald-500 text-[#0B0B0A] hover:brightness-110'
-                }`}
-              >
-                Confirm {statusConfirmUser.is_active ? 'Deactivation' : 'Activation'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. CONFIRM DELETE MODAL */}
+      {/* 2. CONFIRM DELETE MODAL */}
       {deleteConfirmUser && (
         <div className="fixed inset-0 bg-[#0B0B0A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#171714] border border-red-500/30 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
@@ -904,3 +593,4 @@ export const UserManagement = () => {
   )
 }
 
+export default UserManagement
