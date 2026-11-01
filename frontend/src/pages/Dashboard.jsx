@@ -26,7 +26,8 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts'
-import { dashboardService, analyticsService, transactionService, goalService } from '../services/api'
+import { dashboardService, analyticsService, transactionService, goalService, customerService } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
 import { formatCurrency, formatDate, maskAccountNumber } from '../utils/formatters'
 
@@ -59,6 +60,10 @@ export const Dashboard = () => {
   const [data, setData] = useState(null)
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { isCustomer } = useAuth()
+  const [advisor, setAdvisor] = useState(null)
+  const [pendingRequest, setPendingRequest] = useState(null)
+  const [advisorLoading, setAdvisorLoading] = useState(true)
 
   // Transaction Edit Modal State
   const [editingTxn, setEditingTxn] = useState(null)
@@ -150,6 +155,29 @@ export const Dashboard = () => {
       ])
       if (dashRes.data?.success) setData(dashRes.data.data)
       if (analyticRes.data?.success) setAnalytics(analyticRes.data.data)
+
+      if (isCustomer) {
+        try {
+          const advRes = await customerService.getMyAdvisor()
+          if (advRes.data?.success) {
+            if (advRes.data.assigned && advRes.data.data) {
+              setAdvisor(advRes.data.data)
+              setPendingRequest(null)
+            } else if (advRes.data.has_pending_request && advRes.data.pending_request) {
+              setPendingRequest(advRes.data.pending_request)
+              setAdvisor(null)
+            } else {
+              setAdvisor(null)
+              setPendingRequest(null)
+            }
+          }
+        } catch (e) {
+          setAdvisor(null)
+          setPendingRequest(null)
+        } finally {
+          setAdvisorLoading(false)
+        }
+      }
     } catch (e) {
       console.error('Failed to load dashboard data:', e)
     } finally {
@@ -301,44 +329,128 @@ export const Dashboard = () => {
       </div>
 
             {/* Financial Coach & Advisor Guidance Card for Customer */}
-      <div className="bg-gradient-to-r from-[#171714] via-[#21201B] to-[#171714] border border-[#D4AF37]/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center text-[#0B0B0A] shadow-lg shadow-[#D4AF37]/20 shrink-0 mt-1">
-              <Compass className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
-                  Assigned Wealth Coach
-                </span>
-                <span className="text-xs text-[#A9A59A]">Elena Vance • advisor@finora.com</span>
+      {isCustomer && (
+        <div className="bg-gradient-to-r from-[#171714] via-[#21201B] to-[#171714] border border-[#D4AF37]/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+          {advisor ? (
+            /* Case 3: Customer Has an Assigned Advisor */
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center text-[#0B0B0A] font-bold text-lg shadow-lg shadow-[#D4AF37]/20 shrink-0 mt-1">
+                  {advisor.profile_image ? (
+                    <img src={advisor.profile_image} alt={advisor.full_name} className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    advisor.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'FA'
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40">
+                      YOUR ADVISOR
+                    </span>
+                    <span className="text-xs text-[#A9A59A] flex items-center gap-1.5">
+                      <span className="font-semibold text-[#F5F1E6]">{advisor.full_name}</span>
+                      <span>•</span>
+                      <span>{advisor.email}</span>
+                      {advisor.phone && <span>• {advisor.phone}</span>}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                      {advisor.status || 'Active'}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
+                    Specialization: {advisor.specialization || 'Private Wealth Management'}
+                  </h3>
+                  <p className="text-xs text-[#A9A59A] mt-0.5 max-w-2xl leading-relaxed">
+                    Your assigned advisor is actively monitoring your financial health, asset compounding (+{investment_summary.return_percentage || 0}%), and family milestones.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
-                Advisory Health &amp; Goal Navigation
-              </h3>
-              <p className="text-xs text-[#A9A59A] mt-0.5 max-w-2xl leading-relaxed">
-                Your advisor is actively monitoring your 4 financial pillars: Financial Health ({financial_health_score}/100), Asset Compounding (+{investment_summary.return_percentage || 0}%), Emergency Runway, and Life Goals.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              to="/notifications"
-              className="px-4 py-2 bg-[#D4AF37] hover:bg-[#C9A227] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
-            >
-              <Bell className="w-3.5 h-3.5" /> View Advisor Advice
-            </Link>
-            <Link
-              to="/goals"
-              className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] text-[#F5F1E6] font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
-            >
-              <Target className="w-3.5 h-3.5 text-[#D4AF37]" /> Track Goals
-            </Link>
-          </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to="/my-advisor"
+                  className="px-4 py-2 bg-[#D4AF37] hover:bg-[#C9A227] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+                >
+                  <Compass className="w-3.5 h-3.5" /> View Advisor Profile
+                </Link>
+                <Link
+                  to="/goals"
+                  className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] text-[#F5F1E6] font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+                >
+                  <Target className="w-3.5 h-3.5 text-[#D4AF37]" /> Track Goals
+                </Link>
+              </div>
+            </div>
+          ) : pendingRequest ? (
+            /* Case 2: Customer Has a Pending Advisor Request */
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-[#0B0B0A] font-bold text-lg shadow-lg shadow-amber-500/20 shrink-0 mt-1">
+                  {pendingRequest.advisor_name?.charAt(0) || 'A'}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      Advisor Request Pending
+                    </span>
+                    <span className="text-xs text-[#A9A59A] flex items-center gap-1.5">
+                      <span className="font-semibold text-[#F5F1E6]">{pendingRequest.advisor_name}</span>
+                      <span>•</span>
+                      <span>{pendingRequest.advisor_email}</span>
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-bold">
+                      Pending Review
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
+                    Specialization: {pendingRequest.advisor_specialization}
+                  </h3>
+                  <p className="text-xs text-[#A9A59A] mt-0.5 max-w-2xl leading-relaxed">
+                    Your advisor request has been submitted. Waiting for the advisor to review your request.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to="/my-advisor"
+                  className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+                >
+                  <Compass className="w-3.5 h-3.5" /> Manage Request
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* Case 1: Customer Has No Assigned Advisor */
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-[#21201B] border border-[#2B2A24] flex items-center justify-center text-[#D4AF37] shrink-0 mt-0.5">
+                  <Compass className="w-5 h-5 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h4 className="text-sm font-bold text-[#F5F1E6] font-['Space_Grotesk']">
+                      My Financial Advisor
+                    </h4>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2B2A24] text-[#A9A59A] font-semibold border border-[#3E3C34]">
+                      Status: No Advisor Assigned
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#A9A59A] mt-0.5 max-w-xl">
+                    You don't have a financial advisor yet. Browse our available advisors and request one to manage your financial planning.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/my-advisor"
+                className="px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all shrink-0"
+              >
+                Find Financial Advisor
+              </Link>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Analytics Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

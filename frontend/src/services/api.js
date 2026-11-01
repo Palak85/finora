@@ -71,6 +71,21 @@ export const authService = {
   getUsers: () => api.get('/users/'),
   updateUserRole: (id, role) => api.patch(`/users/${id}/`, { role }),
   deleteUser: (id) => api.delete(`/users/${id}/`),
+  getMyAdvisor: () => api.get('/customer/my-advisor/'),
+}
+
+export const customerService = {
+  getMyAdvisor: () => api.get('/customer/my-advisor/'),
+  getAvailableAdvisors: () => api.get('/customer/available-advisors/'),
+  submitAdvisorRequest: (data) => api.post('/customer/advisor-requests/', data),
+  cancelAdvisorRequest: (id) => api.post(`/customer/advisor-requests/${id}/cancel/`),
+}
+
+export const advisorService = {
+  getCustomerRequests: (params) => api.get('/advisor/customer-requests/', { params }),
+  acceptCustomerRequest: (id) => api.post(`/advisor/customer-requests/${id}/accept/`),
+  rejectCustomerRequest: (id, data) => api.post(`/advisor/customer-requests/${id}/reject/`, data || {}),
+  getAssignedClients: () => api.get('/advisor/assigned-clients/'),
 }
 
 export const adminService = {
@@ -127,7 +142,6 @@ export const notificationService = {
   markAsRead: (id) => api.patch(`/notifications/${id}/read/`),
   markAllAsRead: () => api.post('/notifications/read-all/'),
   deleteNotification: (id) => api.delete(`/notifications/${id}/`),
-  sendAdvisorRecommendation: (data) => api.post('/notifications/send-advice/', data),
 }
 
 export const dashboardService = {

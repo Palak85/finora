@@ -14,11 +14,12 @@ import {
   FileText,
   Bell,
   Settings,
-  X
+  X,
+  UserCheck
 } from 'lucide-react'
 
 export const MobileNav = ({ onOpenQuickAdd }) => {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isCustomer, isAdvisor } = useAuth()
   const [moreOpen, setMoreOpen] = useState(false)
 
   const mainTabs = [
@@ -28,11 +29,18 @@ export const MobileNav = ({ onOpenQuickAdd }) => {
     { name: 'Budgets', path: '/budgets', icon: PieChart },
   ]
 
+  const customerExtra = isCustomer
+    ? [{ name: 'My Advisor', path: '/my-advisor', icon: UserCheck }]
+    : isAdvisor
+    ? [{ name: 'Customer Requests', path: '/advisor/requests', icon: UserCheck }]
+    : []
+
   const moreLinks = [
     { name: 'Investments', path: '/investments', icon: TrendingUp },
     { name: 'Goals', path: '/goals', icon: Target },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Reports', path: '/reports', icon: FileText },
+    ...customerExtra,
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]
@@ -80,14 +88,14 @@ export const MobileNav = ({ onOpenQuickAdd }) => {
 
       {/* Floating Gold + Action Button */}
       {!isAdmin && (
-      <div className="fixed bottom-20 right-5 z-40 lg:hidden">
-        <button
-          onClick={onOpenQuickAdd}
-          className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] shadow-2xl shadow-[#D4AF37]/50 flex items-center justify-center active:scale-90 transition-all border-2 border-[#FFF0B3]"
-        >
-          <Plus className="w-7 h-7 font-extrabold stroke-[3]" />
-        </button>
-      </div>
+        <div className="fixed bottom-20 right-5 z-40 lg:hidden">
+          <button
+            onClick={onOpenQuickAdd}
+            className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] shadow-2xl shadow-[#D4AF37]/50 flex items-center justify-center active:scale-90 transition-all border-2 border-[#FFF0B3]"
+          >
+            <Plus className="w-7 h-7 font-extrabold stroke-[3]" />
+          </button>
+        </div>
       )}
 
       {/* Fixed Bottom Navigation Bar */}
@@ -110,6 +118,7 @@ export const MobileNav = ({ onOpenQuickAdd }) => {
           )
         })}
 
+        {/* More Drawer Button */}
         <button
           onClick={() => setMoreOpen(!moreOpen)}
           className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all ${

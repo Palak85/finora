@@ -35,6 +35,7 @@ export const Sidebar = () => {
     { name: 'Goals', path: '/goals', icon: Target },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Reports', path: '/reports', icon: FileText },
+    { name: 'My Advisor', path: '/my-advisor', icon: UserCheck },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]
@@ -43,6 +44,7 @@ export const Sidebar = () => {
   const advisorLinks = [
     { name: 'Advisor Suite', path: '/advisor', icon: Compass },
     { name: 'Client Navigator', path: '/advisor/clients', icon: Users },
+    { name: 'Customer Requests', path: '/advisor/requests', icon: UserCheck },
     { name: 'Track Transactions', path: '/advisor/transactions', icon: ArrowRightLeft },
     { name: 'Track Budgets', path: '/advisor/budgets', icon: PieChart },
     { name: 'Reports', path: '/reports', icon: FileText },
@@ -50,21 +52,18 @@ export const Sidebar = () => {
     { name: 'Settings', path: '/settings', icon: Settings },
   ]
 
-  // 3. System Administrator Navigation (Platform Governance & Control)
+  // 3. System Administrator Navigation (Platform Governance)
   const adminLinks = [
     { name: 'Admin Console', path: '/admin', icon: ShieldCheck },
-    { name: 'User Directory', path: '/admin/users', icon: Users },
-    { name: 'Security Audit Logs', path: '/admin/audit-logs', icon: FileText },
-    { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'System Telemetry', path: '/notifications', icon: Bell },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'User Management', path: '/admin/users', icon: Users },
+    { name: 'Audit Logs', path: '/admin/audit-logs', icon: FileText },
   ]
 
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-[#171714] border-r border-[#2B2A24] h-screen sticky top-0 z-30 select-none">
       {/* Brand Header */}
       <div className="p-6 flex items-center gap-3 border-b border-[#2B2A24]">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 shrink-0">
           <Wallet className="w-6 h-6 text-[#0B0B0A]" />
         </div>
         <div>
@@ -75,7 +74,7 @@ export const Sidebar = () => {
         </div>
       </div>
 
-      {/* Workspace Role Badge */}
+      {/* Workspace Role Indicator */}
       <div className="px-6 py-3 bg-[#0B0B0A]/50 border-b border-[#2B2A24] flex items-center justify-between">
         <span className="text-xs text-[#A9A59A] uppercase tracking-wider font-semibold">Workspace</span>
         <span

@@ -69,7 +69,8 @@ import {
   accountService,
   transactionService,
   analyticsService,
-  notificationService
+  notificationService,
+  advisorService
 } from '../services/api'
 import { useNotification } from '../context/NotificationContext'
 import { formatCurrency, formatDate, maskAccountNumber } from '../utils/formatters'
@@ -136,6 +137,21 @@ export const AdvisorDashboard = () => {
     }
   ])
 
+  // Customer Requests for Advisor
+  const [incomingRequests, setIncomingRequests] = useState([])
+  const [incomingStats, setIncomingStats] = useState({ total: 0, pending: 0, accepted: 0, rejected: 0, cancelled: 0 })
+
+  const loadAdvisorRequests = () => {
+    advisorService.getCustomerRequests()
+      .then(res => {
+        if (res.data?.success) {
+          setIncomingRequests(res.data.data || [])
+          if (res.data.stats) setIncomingStats(res.data.stats)
+        }
+      })
+      .catch(err => console.error('Failed to load advisor requests:', err))
+  }
+
   // Route distinction: /advisor -> 'overview', /advisor/clients -> 'clients'
   const isOverview = location.pathname === '/advisor'
 
@@ -153,6 +169,7 @@ export const AdvisorDashboard = () => {
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false))
+    loadAdvisorRequests()
   }, [])
 
   const handleSelectClient = async (user) => {
@@ -481,6 +498,17 @@ export const AdvisorDashboard = () => {
           >
             <Users className="w-3.5 h-3.5" /> Client Audit Suite ({users.length})
           </button>
+          <button
+            onClick={() => navigate('/advisor/requests')}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#21201B] cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Customer Requests
+            {incomingStats.pending > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                {incomingStats.pending}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -564,7 +592,7 @@ export const AdvisorDashboard = () => {
           </div>
 
           {/* Dedicated Advisor Tracking Consoles Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div
               onClick={() => navigate('/advisor/transactions')}
               className="bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37]/60 rounded-3xl p-5 cursor-pointer group transition-all shadow-md hover:shadow-xl hover:shadow-[#D4AF37]/5 flex items-center justify-between"
@@ -613,6 +641,37 @@ export const AdvisorDashboard = () => {
                 </div>
               </div>
               <ArrowRight className="w-5 h-5 text-[#A9A59A] group-hover:text-[#D4AF37] group-hover:translate-x-1 transition-all shrink-0 ml-3" />
+            </div>
+
+            <div
+              onClick={() => navigate('/advisor/requests')}
+              className="bg-[#171714] border border-[#2B2A24] hover:border-amber-500/60 rounded-3xl p-5 cursor-pointer group transition-all shadow-md hover:shadow-xl hover:shadow-amber-500/5 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-700/10 border border-amber-500/40 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+                  <UserCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#F5F1E6] group-hover:text-amber-400 transition-colors">
+                      Customer Requests
+                    </h3>
+                    {incomingStats.pending > 0 ? (
+                      <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        {incomingStats.pending} Pending
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#2B2A24] text-[#A9A59A]">
+                        Up to date
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#A9A59A] mt-1">
+                    Review prospective client inquiries, accept fiduciary mandates & assign portfolios
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-[#A9A59A] group-hover:text-amber-400 group-hover:translate-x-1 transition-all shrink-0 ml-3" />
             </div>
           </div>
 

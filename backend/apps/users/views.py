@@ -13,6 +13,9 @@ from apps.audit.models import AuditLog
 from apps.accounts.models import Account
 from apps.transactions.models import Transaction
 
+from django.db import transaction as db_transaction
+from django.utils import timezone
+from .models import AdvisorAssignment, AdvisorRequest
 User = get_user_model()
 
 
@@ -575,3 +578,461 @@ class AdminStatsView(APIView):
                 }
             }
         })
+
+
+class AvailableAdvisorsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Retrieve all active financial advisors
+        advisors = User.objects.filter(
+            role='FINANCIAL_ADVISOR',
+            is_active=True
+        ).order_by('full_name')
+
+        # Check if caller has an assigned advisor or pending request
+        current_assigned_advisor_id = None
+        pending_request_advisor_id = None
+
+        if request.user.role == 'CUSTOMER':
+            assignment = AdvisorAssignment.objects.filter(customer=request.user).first()
+            if assignment:
+                current_assigned_advisor_id = assignment.advisor_id
+
+            pending_req = AdvisorRequest.objects.filter(customer=request.user, status='PENDING').first()
+            if pending_req:
+                pending_request_advisor_id = pending_req.advisor_id
+
+        data = []
+        for adv in advisors:
+            data.append({
+                'id': adv.id,
+                'full_name': adv.full_name,
+                'email': adv.email,
+                'phone': adv.phone or '+91 98765 11111',
+                'role': 'Financial Advisor',
+                'designation': 'Senior Wealth Advisor',
+                'specialization': adv.specialization or 'Private Wealth Management',
+                'experience': adv.experience or '8+ Years Advisory Experience',
+                'bio': adv.bio or 'Dedicated private wealth manager and fiduciary steward helping clients optimize capital allocation and retirement security.',
+                'profile_image': adv.profile_image.url if adv.profile_image else None,
+                'status': 'Active',
+                'availability_status': 'Accepting Clients',
+                'is_current_advisor': adv.id == current_assigned_advisor_id,
+                'has_pending_request': adv.id == pending_request_advisor_id,
+            })
+
+        return Response({
+            'success': True,
+            'count': len(data),
+            'data': data
+        })
+
+
+class CustomerAdvisorView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'CUSTOMER':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to customer accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # 1. Fetch request history for customer
+        history_qs = AdvisorRequest.objects.filter(customer=request.user).select_related('advisor').order_by('-created_at')[:10]
+        request_history = []
+        for r in history_qs:
+            request_history.append({
+                'id': r.id,
+                'advisor_id': r.advisor.id,
+                'advisor_name': r.advisor.full_name,
+                'advisor_email': r.advisor.email,
+                'advisor_specialization': r.advisor.specialization or 'Wealth Management',
+                'status': r.status,
+                'message': r.message,
+                'rejection_reason': r.rejection_reason,
+                'request_date': r.request_date,
+                'accepted_at': r.accepted_at,
+                'rejected_at': r.rejected_at,
+                'cancelled_at': r.cancelled_at,
+            })
+
+        # 2. Check active advisor assignment
+        assignment = AdvisorAssignment.objects.filter(customer=request.user).select_related('advisor').first()
+        if assignment and assignment.advisor and assignment.advisor.is_active:
+            advisor = assignment.advisor
+            data = {
+                'id': advisor.id,
+                'full_name': advisor.full_name,
+                'email': advisor.email,
+                'phone': advisor.phone or '+91 98765 11111',
+                'role': 'Financial Advisor',
+                'designation': assignment.designation or 'Financial Advisor',
+                'specialization': advisor.specialization or assignment.specialization or 'Wealth Management',
+                'experience': advisor.experience or '10+ Years Advisory Experience',
+                'bio': advisor.bio or '',
+                'status': 'Active',
+                'availability_status': assignment.availability_status or 'Active',
+                'profile_image': advisor.profile_image.url if advisor.profile_image else None,
+                'assigned_date': assignment.assigned_date,
+            }
+            return Response({
+                'success': True,
+                'assigned': True,
+                'has_pending_request': False,
+                'pending_request': None,
+                'data': data,
+                'request_history': request_history
+            })
+
+        # 3. Check for any pending request
+        pending_req = AdvisorRequest.objects.filter(customer=request.user, status='PENDING').select_related('advisor').first()
+        if pending_req:
+            pending_data = {
+                'id': pending_req.id,
+                'advisor_id': pending_req.advisor.id,
+                'advisor_name': pending_req.advisor.full_name,
+                'advisor_email': pending_req.advisor.email,
+                'advisor_phone': pending_req.advisor.phone or '+91 98765 11111',
+                'advisor_specialization': pending_req.advisor.specialization or 'Wealth Management',
+                'advisor_experience': pending_req.advisor.experience or '8+ Years Advisory Experience',
+                'advisor_profile_image': pending_req.advisor.profile_image.url if pending_req.advisor.profile_image else None,
+                'request_date': pending_req.request_date,
+                'status': 'Pending',
+                'message': 'Your advisor request has been submitted. Waiting for the advisor to review your request.'
+            }
+            return Response({
+                'success': True,
+                'assigned': False,
+                'has_pending_request': True,
+                'pending_request': pending_data,
+                'data': None,
+                'message': 'Advisor Request Pending',
+                'request_history': request_history
+            })
+
+        # 4. No assignment and no pending request
+        return Response({
+            'success': True,
+            'assigned': False,
+            'has_pending_request': False,
+            'pending_request': None,
+            'data': None,
+            'message': 'No Advisor Assigned',
+            'description': "You don't have a financial advisor yet. Browse our available advisors and request one to manage your financial planning.",
+            'request_history': request_history
+        })
+
+
+class CustomerAdvisorRequestCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'CUSTOMER':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to customer accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        advisor_id = request.data.get('advisor_id')
+        if not advisor_id:
+            return Response({
+                'success': False,
+                'message': 'Please select a financial advisor.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            advisor = User.objects.get(id=advisor_id, role='FINANCIAL_ADVISOR', is_active=True)
+        except User.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Selected financial advisor was not found or is currently inactive.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify customer does not already have an active advisor
+        if AdvisorAssignment.objects.filter(customer=request.user).exists():
+            return Response({
+                'success': False,
+                'message': 'You already have an active financial advisor assigned to your account.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify customer does not already have a pending request
+        if AdvisorRequest.objects.filter(customer=request.user, status='PENDING').exists():
+            return Response({
+                'success': False,
+                'message': 'You already have a pending advisor request awaiting review. Please wait or cancel the pending request first.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = request.data.get('message', '').strip()
+
+        with db_transaction.atomic():
+            req_obj = AdvisorRequest.objects.create(
+                customer=request.user,
+                advisor=advisor,
+                status='PENDING',
+                message=msg,
+                request_date=timezone.now()
+            )
+
+            # Notification to Financial Advisor
+            Notification.objects.create(
+                user=advisor,
+                title='🤝 New Customer Advisor Request',
+                message=f"New customer advisor request received from {request.user.full_name} ({request.user.email}).",
+                notification_type='Advisor'
+            )
+
+        return Response({
+            'success': True,
+            'message': 'Advisor request submitted successfully. Your advisor will review your request.',
+            'data': {
+                'id': req_obj.id,
+                'status': 'Pending',
+                'advisor_name': advisor.full_name,
+                'request_date': req_obj.request_date
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class CustomerAdvisorRequestCancelView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role != 'CUSTOMER':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to customer accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            req_obj = AdvisorRequest.objects.get(id=id, customer=request.user)
+        except AdvisorRequest.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Advisor request not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if req_obj.status != 'PENDING':
+            return Response({
+                'success': False,
+                'message': f'Cannot cancel request with status {req_obj.status}. Only pending requests can be cancelled.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        req_obj.status = 'CANCELLED'
+        req_obj.cancelled_at = timezone.now()
+        req_obj.save()
+
+        return Response({
+            'success': True,
+            'message': 'Advisor request has been cancelled successfully.'
+        })
+
+
+class AdvisorRequestsListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'FINANCIAL_ADVISOR':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to financial advisor accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # Strictly query requests received by logged-in advisor
+        qs = AdvisorRequest.objects.filter(advisor=request.user).select_related('customer').order_by('-created_at')
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter.upper())
+
+        requests_data = []
+        for r in qs:
+            c = r.customer
+            requests_data.append({
+                'id': r.id,
+                'status': r.status,
+                'message': r.message,
+                'request_date': r.request_date,
+                'accepted_at': r.accepted_at,
+                'rejected_at': r.rejected_at,
+                'cancelled_at': r.cancelled_at,
+                'rejection_reason': r.rejection_reason,
+                'customer': {
+                    'id': c.id,
+                    'full_name': c.full_name,
+                    'email': c.email,
+                    'phone': c.phone or '+91 98765 43210',
+                    'profile_image': c.profile_image.url if c.profile_image else None,
+                    'date_joined': c.date_joined,
+                }
+            })
+
+        # Summary counts
+        all_for_adv = AdvisorRequest.objects.filter(advisor=request.user)
+        stats = {
+            'total': all_for_adv.count(),
+            'pending': all_for_adv.filter(status='PENDING').count(),
+            'accepted': all_for_adv.filter(status='ACCEPTED').count(),
+            'rejected': all_for_adv.filter(status='REJECTED').count(),
+            'cancelled': all_for_adv.filter(status='CANCELLED').count(),
+        }
+
+        return Response({
+            'success': True,
+            'stats': stats,
+            'data': requests_data
+        })
+
+
+class AdvisorRequestAcceptView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role != 'FINANCIAL_ADVISOR':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to financial advisor accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            req_obj = AdvisorRequest.objects.select_related('customer').get(id=id, advisor=request.user)
+        except AdvisorRequest.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Advisor request not found or does not belong to you.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if req_obj.status != 'PENDING':
+            return Response({
+                'success': False,
+                'message': f'Cannot accept request with status {req_obj.status}. Only pending requests can be accepted.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if customer already has active assignment
+        if AdvisorAssignment.objects.filter(customer=req_obj.customer).exists():
+            req_obj.status = 'CANCELLED'
+            req_obj.cancelled_at = timezone.now()
+            req_obj.save()
+            return Response({
+                'success': False,
+                'message': 'Customer already has an active financial advisor assigned.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        with db_transaction.atomic():
+            # Update request
+            req_obj.status = 'ACCEPTED'
+            req_obj.accepted_at = timezone.now()
+            req_obj.save()
+
+            # Create assignment
+            AdvisorAssignment.objects.update_or_create(
+                customer=req_obj.customer,
+                defaults={
+                    'advisor': request.user,
+                    'assigned_date': timezone.now(),
+                    'specialization': request.user.specialization or 'Wealth Management',
+                    'designation': 'Financial Advisor',
+                    'availability_status': 'Active',
+                    'notes': f"Assigned via accepted request #{req_obj.id}."
+                }
+            )
+
+            # Cancel any other pending requests from this customer to other advisors
+            AdvisorRequest.objects.filter(customer=req_obj.customer, status='PENDING').exclude(id=req_obj.id).update(
+                status='CANCELLED',
+                cancelled_at=timezone.now()
+            )
+
+            # Notification to customer
+            Notification.objects.create(
+                user=req_obj.customer,
+                title='🎉 Financial Advisor Request Accepted',
+                message=f"Your financial advisor request has been accepted. {request.user.full_name} is now your assigned Wealth Advisor.",
+                notification_type='Advisor'
+            )
+
+        return Response({
+            'success': True,
+            'message': 'Customer request accepted successfully. The customer is now assigned to you.'
+        })
+
+
+class AdvisorRequestRejectView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role != 'FINANCIAL_ADVISOR':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to financial advisor accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            req_obj = AdvisorRequest.objects.select_related('customer').get(id=id, advisor=request.user)
+        except AdvisorRequest.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Advisor request not found or does not belong to you.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if req_obj.status != 'PENDING':
+            return Response({
+                'success': False,
+                'message': f'Cannot reject request with status {req_obj.status}. Only pending requests can be rejected.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        reason = request.data.get('reason', '').strip()
+
+        with db_transaction.atomic():
+            req_obj.status = 'REJECTED'
+            req_obj.rejected_at = timezone.now()
+            req_obj.rejection_reason = reason
+            req_obj.save()
+
+            # Notification to customer
+            Notification.objects.create(
+                user=req_obj.customer,
+                title='⚠️ Financial Advisor Request Declined',
+                message="Your financial advisor request has been rejected. You can choose another available advisor.",
+                notification_type='Advisor'
+            )
+
+        return Response({
+            'success': True,
+            'message': 'Customer request rejected.'
+        })
+
+
+class AdvisorAssignedClientsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'FINANCIAL_ADVISOR':
+            return Response({
+                'success': False,
+                'message': 'Access restricted to financial advisor accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        assignments = AdvisorAssignment.objects.filter(advisor=request.user).select_related('customer').order_by('-assigned_date')
+        clients = []
+        for a in assignments:
+            c = a.customer
+            clients.append({
+                'id': c.id,
+                'full_name': c.full_name,
+                'email': c.email,
+                'phone': c.phone or '+91 98765 43210',
+                'profile_image': c.profile_image.url if c.profile_image else None,
+                'date_joined': c.date_joined,
+                'assigned_date': a.assigned_date,
+                'specialization': a.specialization,
+                'status': 'Active' if c.is_active else 'Inactive',
+            })
+
+        return Response({
+            'success': True,
+            'count': len(clients),
+            'data': clients
+        })
+

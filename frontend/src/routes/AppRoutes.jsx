@@ -19,6 +19,7 @@ import { Analytics } from '../pages/Analytics'
 import { Reports } from '../pages/Reports'
 import { Notifications } from '../pages/Notifications'
 import { Settings } from '../pages/Settings'
+import { MyAdvisor } from '../pages/MyAdvisor'
 import { AdvisorDashboard } from '../pages/AdvisorDashboard'
 import { AdminConsole } from '../pages/admin/AdminConsole'
 import { UserManagement } from '../pages/admin/UserManagement'
@@ -27,6 +28,7 @@ import { NotFound } from '../pages/NotFound'
 
 import { AdvisorTransactionsDashboard } from '../pages/AdvisorTransactionsDashboard'
 import { AdvisorBudgetsDashboard } from '../pages/AdvisorBudgetsDashboard'
+import { CustomerRequests } from '../pages/advisor/CustomerRequests'
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -44,20 +46,17 @@ const RoleRoute = ({ children, allowedRoles }) => {
   return children
 }
 
-// Role-based root dashboard router: directs each user to their role-specific dashboard
 const RoleBasedDashboard = () => {
-  const { user, loading } = useAuth()
-  if (loading) return null
-  if (user?.role === 'FINANCIAL_ADVISOR') {
-    return <Navigate to="/advisor" replace />
+  const { isAdvisor, isAdmin } = useAuth()
+  if (isAdmin) {
+    return <AdminConsole />
   }
-  if (user?.role === 'ADMINISTRATOR') {
-    return <Navigate to="/admin" replace />
+  if (isAdvisor) {
+    return <AdvisorDashboard />
   }
   return <Dashboard />
 }
 
-// Role-based Transactions: Directs Advisor to Advisor Transaction Tracker
 const RoleBasedTransactions = () => {
   const { isAdvisor } = useAuth()
   if (isAdvisor) {
@@ -66,7 +65,6 @@ const RoleBasedTransactions = () => {
   return <Transactions />
 }
 
-// Role-based Budgets: Directs Advisor to Advisor Budget Tracker
 const RoleBasedBudgets = () => {
   const { isAdvisor } = useAuth()
   if (isAdvisor) {
@@ -108,6 +106,16 @@ export const AppRoutes = () => {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />
 
+        {/* Customer Only: My Financial Advisor */}
+        <Route
+          path="/my-advisor"
+          element={
+            <RoleRoute allowedRoles={['CUSTOMER']}>
+              <MyAdvisor />
+            </RoleRoute>
+          }
+        />
+
         {/* Advisor Routes */}
         <Route
           path="/advisor"
@@ -138,6 +146,14 @@ export const AppRoutes = () => {
           element={
             <RoleRoute allowedRoles={['FINANCIAL_ADVISOR', 'ADMINISTRATOR']}>
               <AdvisorBudgetsDashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/advisor/requests"
+          element={
+            <RoleRoute allowedRoles={['FINANCIAL_ADVISOR', 'ADMINISTRATOR']}>
+              <CustomerRequests />
             </RoleRoute>
           }
         />

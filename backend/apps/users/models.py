@@ -38,6 +38,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='CUSTOMER')
     profile_image = models.ImageField(upload_to='profiles/', null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
+    specialization = models.CharField(max_length=150, default='Private Wealth Management', blank=True)
+    experience = models.CharField(max_length=100, default='8+ Years Wealth Advisory', blank=True)
+    bio = models.TextField(blank=True, default='')
     
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=True)
@@ -58,3 +61,79 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.full_name} ({self.email}) - {self.role}"
+
+    @property
+    def assigned_advisor(self):
+        if hasattr(self, 'advisor_assignment') and self.advisor_assignment:
+            return self.advisor_assignment.advisor
+        return None
+
+
+class AdvisorAssignment(models.Model):
+    customer = models.OneToOneField(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='advisor_assignment',
+        limit_choices_to={'role': 'CUSTOMER'}
+    )
+    advisor = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='client_assignments',
+        limit_choices_to={'role': 'FINANCIAL_ADVISOR'}
+    )
+    assigned_date = models.DateTimeField(default=timezone.now)
+    specialization = models.CharField(max_length=150, default='Wealth Management', blank=True)
+    designation = models.CharField(max_length=150, default='Financial Advisor', blank=True)
+    availability_status = models.CharField(max_length=50, default='Active', blank=True)
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'advisor_assignments'
+        verbose_name = 'Advisor Assignment'
+        verbose_name_plural = 'Advisor Assignments'
+
+    def __str__(self):
+        return f"{self.customer.full_name} -> {self.advisor.full_name}"
+
+class AdvisorRequest(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+        ('CANCELLED', 'Cancelled'),
+    )
+
+    customer = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='sent_advisor_requests',
+        limit_choices_to={'role': 'CUSTOMER'}
+    )
+    advisor = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='received_advisor_requests',
+        limit_choices_to={'role': 'FINANCIAL_ADVISOR'}
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    message = models.TextField(blank=True, default='')
+    rejection_reason = models.TextField(blank=True, default='')
+
+    request_date = models.DateTimeField(default=timezone.now)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'advisor_requests'
+        ordering = ['-created_at']
+        verbose_name = 'Advisor Request'
+        verbose_name_plural = 'Advisor Requests'
+
+    def __str__(self):
+        return f"Request #{self.id}: {self.customer.full_name} -> {self.advisor.full_name} ({self.status})"
+
