@@ -90,19 +90,44 @@ if USE_SQLITE:
         }
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': DB_NAME,
-            'USER': DB_USER,
-            'PASSWORD': DB_PASSWORD,
-            'HOST': DB_HOST,
-            'PORT': DB_PORT,
-            'OPTIONS': {
-                'charset': 'utf8mb4',
+    # Attempt MySQL connection with fast timeout; gracefully fallback to SQLite if MySQL is unavailable
+    _mysql_ok = False
+    try:
+        import pymysql
+        _test_conn = pymysql.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            port=int(DB_PORT),
+            database=DB_NAME,
+            connect_timeout=2
+        )
+        _test_conn.close()
+        _mysql_ok = True
+    except Exception as _e:
+        _mysql_ok = False
+
+    if _mysql_ok:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': DB_NAME,
+                'USER': DB_USER,
+                'PASSWORD': DB_PASSWORD,
+                'HOST': DB_HOST,
+                'PORT': DB_PORT,
+                'OPTIONS': {
+                    'charset': 'utf8mb4',
+                }
             }
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 
 AUTH_USER_MODEL = 'users.User'

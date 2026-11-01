@@ -61,13 +61,15 @@ export const Sidebar = () => {
         </div>
       </div>
 
-      {/* User Role Badge */}
-      <div className="px-6 py-3 bg-[#0B0B0A]/50 border-b border-[#2B2A24] flex items-center justify-between">
-        <span className="text-xs text-[#A9A59A] uppercase tracking-wider font-semibold">Workspace</span>
-        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30">
-          {user?.role || 'CUSTOMER'}
-        </span>
-      </div>
+      {/* User Role Badge (hidden on customer portal) */}
+      {user?.role && user.role !== 'CUSTOMER' && (
+        <div className="px-6 py-3 bg-[#0B0B0A]/50 border-b border-[#2B2A24] flex items-center justify-between">
+          <span className="text-xs text-[#A9A59A] uppercase tracking-wider font-semibold">Workspace</span>
+          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30">
+            {user.role}
+          </span>
+        </div>
+      )}
 
       {/* Navigation Sections */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">

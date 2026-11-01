@@ -94,6 +94,20 @@ export const Accounts = () => {
             <div key={i} className="h-48 bg-[#171714] border border-[#2B2A24] rounded-3xl" />
           ))}
         </div>
+      ) : accounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-[#2B2A24] rounded-3xl p-8 bg-[#171714]/50">
+          <Wallet className="w-12 h-12 text-[#A9A59A] opacity-40 mb-3" />
+          <h3 className="text-base font-bold text-[#F5F1E6]">No Bank Accounts Linked</h3>
+          <p className="text-xs text-[#A9A59A] mt-1 max-w-sm">
+            Link your savings, checking, salary, or credit card accounts to manage your financial portfolio.
+          </p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Link New Account
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.map((acc) => (

@@ -39,7 +39,18 @@ export const Register = () => {
       if (res.success) {
         navigate('/dashboard')
       } else {
-        setError(res.message || 'Registration failed.')
+        let msg = res.message || 'Registration failed.'
+        if (res.errors && typeof res.errors === 'object') {
+          const detailStrings = Object.entries(res.errors).map(([field, errs]) => {
+            const errText = Array.isArray(errs) ? errs.join(' ') : String(errs)
+            const cleanField = field.replace('_', ' ')
+            return `${cleanField.charAt(0).toUpperCase() + cleanField.slice(1)}: ${errText}`
+          })
+          if (detailStrings.length > 0) {
+            msg = detailStrings.join(' • ')
+          }
+        }
+        setError(msg)
       }
     } catch (err) {
       setError('Registration failed. Please check your inputs.')
@@ -130,12 +141,16 @@ export const Register = () => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Password</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-semibold text-[#A9A59A]">Password</label>
+            <span className="text-[10px] text-[#A9A59A]">Min 8 characters</span>
+          </div>
           <div className="relative">
             <Lock className="w-4 h-4 text-[#A9A59A] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="password"
               required
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"

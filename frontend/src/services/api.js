@@ -79,6 +79,7 @@ export const accountService = {
   createAccount: (data) => api.post('/accounts/', data),
   updateAccount: (id, data) => api.patch(`/accounts/${id}/`, data),
   deleteAccount: (id) => api.delete(`/accounts/${id}/`),
+  transfer: (data) => api.post('/accounts/transfer/', data),
 }
 
 export const transactionService = {
@@ -109,6 +110,7 @@ export const goalService = {
   createGoal: (data) => api.post('/goals/', data),
   updateGoal: (id, data) => api.patch(`/goals/${id}/`, data),
   deleteGoal: (id) => api.delete(`/goals/${id}/`),
+  contribute: (id, data) => api.post(`/goals/${id}/contribute/`, data),
 }
 
 export const notificationService = {

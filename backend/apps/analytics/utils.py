@@ -106,6 +106,10 @@ def calculate_financial_health_score(user):
     - Investment diversification (weight: 20%)
     - Debt-to-Asset ratio (weight: 20%)
     """
+    # Return 0 if the user has no linked accounts and no transactions
+    if not Account.objects.filter(user=user, status='Active').exists() and not Transaction.objects.filter(user=user).exists():
+        return 0
+
     income = calculate_monthly_income(user)
     expenses = calculate_monthly_expenses(user)
     savings_rate = calculate_savings_rate(income, expenses)

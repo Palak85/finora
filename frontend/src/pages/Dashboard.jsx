@@ -17,7 +17,9 @@ import {
   Radio,
   CheckCircle2,
   Pencil,
-  X
+  X,
+  Target,
+  ArrowRightLeft
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -225,7 +227,9 @@ export const Dashboard = () => {
                 <HeartPulse className="w-4 h-4 text-emerald-400" /> Financial Health
               </p>
               <p className="text-[11px] text-[#A9A59A] mt-0.5">
-                {financial_health_score >= 80 ? 'Excellent Stability' : 'Good Progress'} • Savings Rate <span className="text-[#D4AF37] font-bold">{savings_rate}%</span>
+                {financial_health_score > 0
+                  ? (financial_health_score >= 80 ? 'Excellent Stability' : 'Good Progress')
+                  : 'No Data Yet'} • Savings Rate <span className="text-[#D4AF37] font-bold">{savings_rate}%</span>
               </p>
             </div>
           </div>
@@ -255,7 +259,9 @@ export const Dashboard = () => {
             </div>
           </div>
           <p className="text-xl font-bold text-emerald-400 font-['Space_Grotesk']">{formatCurrency(monthly_income)}</p>
-          <p className="text-[11px] text-[#A9A59A] mt-1">+12% vs previous month</p>
+          <p className="text-[11px] text-[#A9A59A] mt-1">
+            {Number(monthly_income) > 0 ? '+12% vs previous month' : 'No income recorded'}
+          </p>
         </div>
 
         {/* Monthly Expenses */}
@@ -267,7 +273,13 @@ export const Dashboard = () => {
             </div>
           </div>
           <p className="text-xl font-bold text-red-400 font-['Space_Grotesk']">{formatCurrency(monthly_expenses)}</p>
-          <p className="text-[11px] text-[#A9A59A] mt-1">Budget usage at <span className="text-[#D4AF37] font-semibold">{budget_usage}%</span></p>
+          <p className="text-[11px] text-[#A9A59A] mt-1">
+            {Number(monthly_expenses) > 0 ? (
+              <>Budget usage at <span className="text-[#D4AF37] font-semibold">{budget_usage}%</span></>
+            ) : (
+              'No expenses recorded'
+            )}
+          </p>
         </div>
 
         {/* Investments Value */}
@@ -280,7 +292,9 @@ export const Dashboard = () => {
           </div>
           <p className="text-xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">{formatCurrency(investment_summary.current_value || 0)}</p>
           <p className="text-[11px] text-emerald-400 mt-1 font-semibold">
-            +{investment_summary.return_percentage || 0}% overall return
+            {Number(investment_summary.current_value) > 0
+              ? `+${investment_summary.return_percentage || 0}% overall return`
+              : 'No active positions'}
           </p>
         </div>
       </div>
@@ -300,27 +314,35 @@ export const Dashboard = () => {
           </div>
 
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={analytics?.cash_flow_timeline || []}>
-                <defs>
-                  <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" stroke="#A9A59A" fontSize={11} tickLine={false} />
-                <YAxis stroke="#A9A59A" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0B0B0A', borderColor: '#2B2A24', borderRadius: '12px', fontSize: '12px' }}
-                />
-                <Area type="monotone" dataKey="income" stroke="#D4AF37" strokeWidth={2} fillOpacity={1} fill="url(#incomeGrad)" name="Income (₹)" />
-                <Area type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#expenseGrad)" name="Expense (₹)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {(analytics?.cash_flow_timeline || []).length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center border border-dashed border-[#2B2A24] rounded-2xl text-center p-6">
+                <TrendingUp className="w-8 h-8 text-[#A9A59A] opacity-40 mb-2" />
+                <p className="text-xs font-semibold text-[#F5F1E6]">No cash flow history</p>
+                <p className="text-[11px] text-[#A9A59A] mt-0.5">Record income and expenses to generate real-time analytics.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analytics?.cash_flow_timeline || []}>
+                  <defs>
+                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" stroke="#A9A59A" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#A9A59A" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0B0B0A', borderColor: '#2B2A24', borderRadius: '12px', fontSize: '12px' }}
+                  />
+                  <Area type="monotone" dataKey="income" stroke="#D4AF37" strokeWidth={2} fillOpacity={1} fill="url(#incomeGrad)" name="Income (₹)" />
+                  <Area type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#expenseGrad)" name="Expense (₹)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -331,41 +353,53 @@ export const Dashboard = () => {
             <p className="text-xs text-[#A9A59A] mb-4">Current month spending distribution</p>
 
             <div className="h-48 w-full flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={(analytics?.category_spending || []).map(item => ({
-                      ...item,
-                      amount: Number(item.amount) || 0
-                    }))}
-                    dataKey="amount"
-                    nameKey="category"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={3}
-                  >
-                    {(analytics?.category_spending || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={GOLD_PALETTE[index % GOLD_PALETTE.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CategoryTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              {(analytics?.category_spending || []).length === 0 ? (
+                <div className="text-center">
+                  <PieChart className="w-8 h-8 text-[#A9A59A] opacity-40 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-[#F5F1E6]">No expense categories</p>
+                  <p className="text-[11px] text-[#A9A59A] mt-0.5">Expenses will appear grouped by category.</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={(analytics?.category_spending || []).map(item => ({
+                        ...item,
+                        amount: Number(item.amount) || 0
+                      }))}
+                      dataKey="amount"
+                      nameKey="category"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={3}
+                    >
+                      {(analytics?.category_spending || []).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={GOLD_PALETTE[index % GOLD_PALETTE.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CategoryTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
           <div className="space-y-2 mt-4 pt-4 border-t border-[#2B2A24]">
-            {(analytics?.category_spending || []).slice(0, 3).map((item, idx) => (
-              <div key={item.category} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2 text-[#A9A59A]">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: GOLD_PALETTE[idx % GOLD_PALETTE.length] }} />
-                  {item.category}
-                </span>
-                <span className="font-bold text-[#F5F1E6]">{formatCurrency(item.amount)}</span>
-              </div>
-            ))}
+            {(analytics?.category_spending || []).length === 0 ? (
+              <p className="text-[11px] text-[#A9A59A] text-center py-2">No category spending recorded yet.</p>
+            ) : (
+              (analytics?.category_spending || []).slice(0, 3).map((item, idx) => (
+                <div key={item.category} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-[#A9A59A]">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: GOLD_PALETTE[idx % GOLD_PALETTE.length] }} />
+                    {item.category}
+                  </span>
+                  <span className="font-bold text-[#F5F1E6]">{formatCurrency(item.amount)}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -440,23 +474,34 @@ export const Dashboard = () => {
           </div>
 
           <div className="space-y-3">
-            {accounts.map((acc) => (
-              <div key={acc.id} className="p-4 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl hover:border-[#D4AF37]/30 transition-all">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-xs font-bold text-[#F5F1E6]">{acc.account_name}</p>
-                    <p className="text-[10px] text-[#A9A59A]">{acc.bank_name} • {acc.masked_account_number}</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]">
-                    {acc.account_type}
-                  </span>
-                </div>
-                <div className="flex items-baseline justify-between mt-3">
-                  <span className="text-xs text-[#A9A59A]">Available Balance</span>
-                  <span className="text-sm font-bold text-[#D4AF37] font-['Space_Grotesk']">{formatCurrency(acc.balance, acc.currency)}</span>
-                </div>
+            {accounts.length === 0 ? (
+              <div className="py-8 text-center border border-dashed border-[#2B2A24] rounded-2xl p-6">
+                <Wallet className="w-8 h-8 text-[#A9A59A] mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-semibold text-[#F5F1E6]">No bank accounts linked</p>
+                <p className="text-[11px] text-[#A9A59A] mt-0.5">Link an account to start tracking liquid assets.</p>
+                <Link to="/accounts" className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 rounded-xl text-xs font-bold hover:bg-[#D4AF37]/20 transition-all">
+                  <Plus className="w-3.5 h-3.5" /> Link Account
+                </Link>
               </div>
-            ))}
+            ) : (
+              accounts.map((acc) => (
+                <div key={acc.id} className="p-4 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl hover:border-[#D4AF37]/30 transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-bold text-[#F5F1E6]">{acc.account_name}</p>
+                      <p className="text-[10px] text-[#A9A59A]">{acc.bank_name} • {acc.masked_account_number}</p>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]">
+                      {acc.account_type}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-3">
+                    <span className="text-xs text-[#A9A59A]">Available Balance</span>
+                    <span className="text-sm font-bold text-[#D4AF37] font-['Space_Grotesk']">{formatCurrency(acc.balance, acc.currency)}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -468,43 +513,51 @@ export const Dashboard = () => {
           </div>
 
           <div className="divide-y divide-[#2B2A24]">
-            {recent_transactions.map((txn) => {
-              const isIncome = txn.transaction_type === 'INCOME'
-              return (
-                <div key={txn.id} className="py-3.5 flex items-center justify-between hover:bg-[#21201B]/50 px-2 rounded-xl transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-                    }`}>
-                      {isIncome ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-[#F5F1E6] line-clamp-1">{txn.description}</p>
-                      <p className="text-[10px] text-[#A9A59A]">
-                        {txn.category} • {formatDate(txn.transaction_date)} • {txn.payment_method}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <p className={`text-xs font-bold font-['Space_Grotesk'] ${
-                        isIncome ? 'text-emerald-400' : 'text-[#F5F1E6]'
+            {recent_transactions.length === 0 ? (
+              <div className="py-12 text-center border border-dashed border-[#2B2A24] rounded-2xl p-6">
+                <ArrowRightLeft className="w-8 h-8 text-[#A9A59A] mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-semibold text-[#F5F1E6]">No transactions recorded yet</p>
+                <p className="text-[11px] text-[#A9A59A] mt-0.5">Your incoming and outgoing payments will appear here.</p>
+              </div>
+            ) : (
+              recent_transactions.map((txn) => {
+                const isIncome = txn.transaction_type === 'INCOME'
+                return (
+                  <div key={txn.id} className="py-3.5 flex items-center justify-between hover:bg-[#21201B]/50 px-2 rounded-xl transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                       }`}>
-                        {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
-                      </p>
-                      <p className="text-[9px] text-[#A9A59A] font-mono">{txn.reference_id}</p>
+                        {isIncome ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-[#F5F1E6] line-clamp-1">{txn.description}</p>
+                        <p className="text-[10px] text-[#A9A59A]">
+                          {txn.category} • {formatDate(txn.transaction_date)} • {txn.payment_method}
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleOpenEditTxn(txn)}
-                      className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
-                      title="Edit Transaction"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <p className={`text-xs font-bold font-['Space_Grotesk'] ${
+                          isIncome ? 'text-emerald-400' : 'text-[#F5F1E6]'
+                        }`}>
+                          {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                        </p>
+                        <p className="text-[9px] text-[#A9A59A] font-mono">{txn.reference_id}</p>
+                      </div>
+                      <button
+                        onClick={() => handleOpenEditTxn(txn)}
+                        className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                        title="Edit Transaction"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
         </div>
       </div>
@@ -519,35 +572,46 @@ export const Dashboard = () => {
           <Link to="/goals" className="text-xs font-bold text-[#D4AF37] hover:underline">Manage Goals</Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {goals.map((g) => (
-            <div key={g.id} className="p-4 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#F5F1E6] truncate">{g.name}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-extrabold text-[#D4AF37]">{g.progress_percentage}%</span>
-                  <button
-                    onClick={() => handleOpenEditGoal(g)}
-                    className="p-1 rounded-md text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
-                    title="Edit Goal"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
+        {goals.length === 0 ? (
+          <div className="py-8 text-center border border-dashed border-[#2B2A24] rounded-2xl p-6">
+            <Target className="w-8 h-8 text-[#A9A59A] mx-auto mb-2 opacity-50" />
+            <p className="text-xs font-semibold text-[#F5F1E6]">No financial goals created yet</p>
+            <p className="text-[11px] text-[#A9A59A] mt-0.5">Set milestone savings targets to grow your net worth.</p>
+            <Link to="/goals" className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 rounded-xl text-xs font-bold hover:bg-[#D4AF37]/20 transition-all">
+              <Plus className="w-3.5 h-3.5" /> Create Goal
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {goals.map((g) => (
+              <div key={g.id} className="p-4 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#F5F1E6] truncate">{g.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-extrabold text-[#D4AF37]">{g.progress_percentage}%</span>
+                    <button
+                      onClick={() => handleOpenEditGoal(g)}
+                      className="p-1 rounded-md text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                      title="Edit Goal"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="w-full h-2 bg-[#2B2A24] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, g.progress_percentage)}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-[#A9A59A]">
+                  <span>{formatCurrency(g.current_amount)}</span>
+                  <span className="text-[#F5F1E6] font-semibold">Target: {formatCurrency(g.target_amount)}</span>
                 </div>
               </div>
-              <div className="w-full h-2 bg-[#2B2A24] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, g.progress_percentage)}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-[#A9A59A]">
-                <span>{formatCurrency(g.current_amount)}</span>
-                <span className="text-[#F5F1E6] font-semibold">Target: {formatCurrency(g.target_amount)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Edit Transaction Modal on Dashboard */}

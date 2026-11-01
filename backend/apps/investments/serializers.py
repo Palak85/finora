@@ -4,6 +4,7 @@ from .models import Investment
 class InvestmentSerializer(serializers.ModelSerializer):
     user_full_name = serializers.ReadOnlyField(source='user.full_name')
     user_email = serializers.ReadOnlyField(source='user.email')
+    current_value = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
 
     class Meta:
         model = Investment
@@ -14,6 +15,11 @@ class InvestmentSerializer(serializers.ModelSerializer):
             'purchase_date', 'created_at', 'updated_at'
         )
         read_only_fields = ('id', 'user', 'user_full_name', 'user_email', 'invested_amount', 'profit_loss', 'profit_loss_percentage', 'created_at', 'updated_at')
+
+    def validate(self, attrs):
+        if 'current_value' not in attrs or attrs.get('current_value') is None:
+            attrs['current_value'] = attrs['quantity'] * attrs['average_buy_price']
+        return attrs
 
     def validate_quantity(self, value):
         if value <= 0:

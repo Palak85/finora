@@ -8,7 +8,6 @@ from .serializers import (
     ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 )
 from .permissions import IsAdminUser, IsAdvisor
-from .provisioning import provision_user_real_data
 from apps.notifications.models import Notification
 from apps.audit.models import AuditLog
 
@@ -31,14 +30,11 @@ class RegisterView(APIView):
             user = serializer.save()
             ip = get_client_ip(request)
 
-            # Provision realistic real financial portfolio for customer
-            provision_user_real_data(user)
-
             # Welcome notification & Audit log
             Notification.objects.create(
                 user=user,
                 title='👋 Welcome to Finora Wealth!',
-                message='Your private wealth portfolio has been established. You are ready to track accounts and investments.',
+                message='Your account has been created. Start by linking your bank account or adding a budget.',
                 notification_type='System'
             )
             AuditLog.objects.create(

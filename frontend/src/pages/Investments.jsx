@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { TrendingUp, Plus, Award, Trash2, PieChart as PieIcon, ArrowUpRight, ArrowDownRight, Users } from 'lucide-react'
+import { TrendingUp, Plus, Award, Trash2, PieChart as PieIcon, ArrowUpRight, ArrowDownRight, Users, X, CheckCircle2, AlertCircle } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { investmentService, authService } from '../services/api'
+import { investmentService, authService, accountService } from '../services/api'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import { useAuth } from '../context/AuthContext'
 
@@ -35,6 +35,80 @@ export const Investments = () => {
   const [loading, setLoading] = useState(true)
   const [allUsers, setAllUsers] = useState([])
   const [selectedUserId, setSelectedUserId] = useState('')
+
+  // Invest in Asset Modal States
+  const [isInvestModalOpen, setIsInvestModalOpen] = useState(false)
+  const [accounts, setAccounts] = useState([])
+  const [assetName, setAssetName] = useState('')
+  const [assetType, setAssetType] = useState('Stocks')
+  const [quantity, setQuantity] = useState('')
+  const [buyPrice, setBuyPrice] = useState('')
+  const [accountId, setAccountId] = useState('')
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
+  const [investLoading, setInvestLoading] = useState(false)
+  const [investError, setInvestError] = useState('')
+  const [investSuccess, setInvestSuccess] = useState('')
+
+  const fetchAccounts = async () => {
+    try {
+      const res = await accountService.getAccounts()
+      if (res.data?.success && res.data.data.length > 0) {
+        setAccounts(res.data.data)
+        if (!accountId) setAccountId(res.data.data[0].id)
+      }
+    } catch (e) {}
+  }
+
+  const handleOpenInvestModal = () => {
+    fetchAccounts()
+    setAssetName('')
+    setQuantity('')
+    setBuyPrice('')
+    setInvestError('')
+    setInvestSuccess('')
+    setIsInvestModalOpen(true)
+  }
+
+  const handleInvestSubmit = async (e) => {
+    e.preventDefault()
+    setInvestLoading(true)
+    setInvestError('')
+    setInvestSuccess('')
+
+    const totalCost = (parseFloat(quantity) || 0) * (parseFloat(buyPrice) || 0)
+    const selectedAcc = accounts.find(a => String(a.id) === String(accountId))
+
+    if (selectedAcc && parseFloat(selectedAcc.balance) < totalCost) {
+      setInvestError(`Insufficient balance in ${selectedAcc.account_name}. Available: ${formatCurrency(selectedAcc.balance)}, Required: ${formatCurrency(totalCost)}`)
+      setInvestLoading(false)
+      return
+    }
+
+    try {
+      const payload = {
+        asset_name: assetName,
+        asset_type: assetType,
+        quantity: parseFloat(quantity),
+        average_buy_price: parseFloat(buyPrice),
+        current_value: totalCost,
+        purchase_date: purchaseDate,
+        account: accountId,
+      }
+      const res = await investmentService.createInvestment(payload)
+      if (res.data?.success) {
+        setInvestSuccess(`Successfully purchased ${quantity} units of ${assetName}!`)
+        fetchInvestments()
+        fetchAccounts()
+        setTimeout(() => {
+          setIsInvestModalOpen(false)
+        }, 900)
+      }
+    } catch (err) {
+      setInvestError(err.response?.data?.message || 'Failed to execute investment.')
+    } finally {
+      setInvestLoading(false)
+    }
+  }
 
   const fetchInvestments = async () => {
     setLoading(true)
@@ -110,6 +184,15 @@ export const Investments = () => {
               : 'Multi-asset tracking across Stocks, Mutual Funds, Gold & ETFs'}
           </p>
         </div>
+
+        {!isAdmin && (
+          <button
+            onClick={handleOpenInvestModal}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Invest in Asset
+          </button>
+        )}
       </div>
 
       {/* Admin User Filter Dropdown */}
@@ -237,8 +320,18 @@ export const Investments = () => {
               ))}
             </div>
           ) : investments.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#A9A59A]">
-              No investment assets found for this selection.
+            <div className="py-12 text-center text-xs text-[#A9A59A] flex flex-col items-center justify-center">
+              <TrendingUp className="w-10 h-10 text-[#A9A59A] opacity-40 mb-2" />
+              <p className="font-semibold text-[#F5F1E6]">No investment assets recorded yet</p>
+              <p className="text-[11px] text-[#A9A59A] mt-1">Grow your portfolio by investing in Stocks, Mutual Funds, Gold, or ETFs.</p>
+              {!isAdmin && (
+                <button
+                  onClick={handleOpenInvestModal}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Start First Investment
+                </button>
+              )}
             </div>
           ) : (
             <div className="divide-y divide-[#2B2A24]">
@@ -287,6 +380,160 @@ export const Investments = () => {
           )}
         </div>
       </div>
+
+      {/* Invest in Asset Modal */}
+      {isInvestModalOpen && (
+        <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-[#2B2A24] flex items-center justify-between bg-[#0B0B0A]">
+              <div>
+                <h3 className="text-base font-bold text-[#F5F1E6] flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-[#D4AF37]" /> Invest in Asset
+                </h3>
+                <p className="text-[11px] text-[#A9A59A]">Allocate capital and deduct payment directly from your bank account</p>
+              </div>
+              <button
+                onClick={() => setIsInvestModalOpen(false)}
+                className="p-1.5 rounded-full bg-[#171714] border border-[#2B2A24] text-[#A9A59A] hover:text-[#D4AF37]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInvestSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {investSuccess && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" /> {investSuccess}
+                </div>
+              )}
+
+              {investError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {investError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Asset Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Reliance Industries / Sovereign Gold / Mirae Asset Large Cap"
+                  value={assetName}
+                  onChange={(e) => setAssetName(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Asset Type</label>
+                  <select
+                    value={assetType}
+                    onChange={(e) => setAssetType(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="Stocks">Stocks</option>
+                    <option value="Mutual Funds">Mutual Funds</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Fixed Deposits">Fixed Deposits</option>
+                    <option value="Cryptocurrency">Cryptocurrency</option>
+                    <option value="ETF">ETF</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    min="0.0001"
+                    placeholder="10"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Buy Price per Unit (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  min="0.01"
+                  placeholder="2450.00"
+                  value={buyPrice}
+                  onChange={(e) => setBuyPrice(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              {/* Total Investment Summary */}
+              <div className="p-3 bg-[#0B0B0A] border border-[#2B2A24] rounded-xl flex items-center justify-between text-xs">
+                <span className="text-[#A9A59A]">Total Capital Required:</span>
+                <span className="text-base font-bold text-[#D4AF37] font-['Space_Grotesk']">
+                  {formatCurrency((parseFloat(quantity) || 0) * (parseFloat(buyPrice) || 0))}
+                </span>
+              </div>
+
+              {/* Bank Account Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-[#A9A59A]">Deduct Payment from Bank Account</label>
+                  {accounts.find(a => String(a.id) === String(accountId)) && (
+                    <span className="text-[11px] text-emerald-400 font-semibold">
+                      Available: {formatCurrency(accounts.find(a => String(a.id) === String(accountId)).balance)}
+                    </span>
+                  )}
+                </div>
+                <select
+                  required
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                >
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.account_name} ({acc.masked_account_number}) — Bal: ₹{parseFloat(acc.balance).toLocaleString('en-IN')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Acquisition Date</label>
+                <input
+                  type="date"
+                  required
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsInvestModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-[#2B2A24] text-xs font-bold text-[#A9A59A] hover:bg-[#21201B]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={investLoading || accounts.length === 0}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] text-xs font-bold shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 disabled:opacity-50"
+                >
+                  {investLoading ? 'Processing...' : 'Confirm & Purchase Asset'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
