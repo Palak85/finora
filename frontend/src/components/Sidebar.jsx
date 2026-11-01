@@ -46,8 +46,6 @@ export const Sidebar = () => {
     { name: 'Track Transactions', path: '/advisor/transactions', icon: ArrowRightLeft },
     { name: 'Track Budgets', path: '/advisor/budgets', icon: PieChart },
     { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Wealth Intelligence', path: '/wealth-analytics', icon: BarChart3 },
-    { name: 'Advisor Showcase', path: '/advisor-suite', icon: Sparkles },
     { name: 'Live Client Signals', path: '/notifications', icon: Bell },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]

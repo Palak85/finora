@@ -23,8 +23,6 @@ import { AdvisorDashboard } from '../pages/AdvisorDashboard'
 import { AdminDashboard } from '../pages/AdminDashboard'
 import { NotFound } from '../pages/NotFound'
 
-import { WealthAnalyticsPage } from '../pages/WealthAnalyticsPage'
-import { AdvisorSuitePage } from '../pages/AdvisorSuitePage'
 import { AdvisorTransactionsDashboard } from '../pages/AdvisorTransactionsDashboard'
 import { AdvisorBudgetsDashboard } from '../pages/AdvisorBudgetsDashboard'
 
@@ -78,10 +76,8 @@ const RoleBasedBudgets = () => {
 export const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Home / Landing & Showcase Pages */}
+      {/* Public Home / Landing Page */}
       <Route path="/" element={<Home />} />
-      <Route path="/wealth-analytics" element={<WealthAnalyticsPage />} />
-      <Route path="/advisor-suite" element={<AdvisorSuitePage />} />
 
       {/* Public Auth Routes */}
       <Route element={<AuthLayout />}>

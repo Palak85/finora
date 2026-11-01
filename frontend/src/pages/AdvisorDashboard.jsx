@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
+  ShieldCheck,
+  ChevronRight,
   ArrowRightLeft,
   UserCheck,
   Users,
@@ -707,10 +709,15 @@ export const AdvisorDashboard = () => {
         /* ================= 2. CLIENT AUDIT SUITE (6 CORE MODULES) ================= */
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Panel: Client Directory Selector */}
-          <div className="lg:col-span-1 bg-[#171714] border border-[#2B2A24] rounded-3xl p-5 space-y-4 h-fit">
-            <div className="flex items-center justify-between pb-2 border-b border-[#2B2A24]">
-              <h3 className="text-xs font-bold text-[#A9A59A] uppercase tracking-wider">Client Directory</h3>
-              <span className="text-[11px] text-[#D4AF37] font-semibold">{filteredClients.length} Clients</span>
+          <div className="lg:col-span-1 bg-[#171714] border border-[#2B2A24] rounded-3xl p-5 space-y-4 h-fit shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2B2A24]">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#D4AF37]" />
+                <h3 className="text-xs font-bold text-[#F5F1E6] uppercase tracking-wider">Client Dossiers</h3>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+                {filteredClients.length} Active
+              </span>
             </div>
 
             {/* Search Input */}
@@ -718,42 +725,63 @@ export const AdvisorDashboard = () => {
               <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#A9A59A]" />
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder="Search clients..."
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
-                className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-xs text-[#F5F1E6] pl-9 pr-3 py-2 rounded-xl focus:border-[#D4AF37] focus:outline-none"
+                className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-xs text-[#F5F1E6] pl-9 pr-3 py-2 rounded-xl focus:border-[#D4AF37] focus:outline-none transition-all placeholder-[#A9A59A]/60"
               />
             </div>
 
-            <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
-              {filteredClients.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => handleSelectClient(u)}
-                  className={`w-full text-left p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between ${
-                    selectedUser?.id === u.id
-                      ? 'bg-[#D4AF37]/15 border-[#D4AF37] text-[#D4AF37]'
-                      : 'bg-[#0B0B0A] border-[#2B2A24] text-[#F5F1E6] hover:border-[#D4AF37]/40'
-                  }`}
-                >
-                  <div className="truncate mr-2">
-                    <p className="font-bold truncate">{u.full_name}</p>
-                    <p className="text-[10px] text-[#A9A59A] font-normal truncate">{u.email}</p>
-                  </div>
-                  <Eye className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                </button>
-              ))}
+            <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+              {filteredClients.map((u) => {
+                const isSelected = selectedUser?.id === u.id
+                const initial = (u.full_name || 'U').charAt(0).toUpperCase()
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => handleSelectClient(u)}
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-[#D4AF37]/20 via-[#21201B] to-[#171714] border-[#D4AF37] shadow-lg shadow-[#D4AF37]/10'
+                        : 'bg-[#0B0B0A] border-[#2B2A24] hover:border-[#D4AF37]/50 hover:bg-[#1c1b17]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 truncate mr-2">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 transition-transform ${
+                        isSelected
+                          ? 'bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] scale-105 shadow-md shadow-[#D4AF37]/30'
+                          : 'bg-[#171714] border border-[#2B2A24] text-[#D4AF37] group-hover:border-[#D4AF37]/40'
+                      }`}>
+                        {initial}
+                      </div>
+                      <div className="truncate">
+                        <p className={`font-bold text-xs truncate ${isSelected ? 'text-[#D4AF37]' : 'text-[#F5F1E6] group-hover:text-[#D4AF37]'}`}>
+                          {u.full_name}
+                        </p>
+                        <p className="text-[10px] text-[#A9A59A] truncate font-mono">{u.email}</p>
+                      </div>
+                    </div>
+                    {isSelected ? (
+                      <span className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-sm shadow-[#D4AF37] shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-[#A9A59A] group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    )}
+                  </button>
+                )
+              })}
             </div>
 
             {selectedUser && (
-              <div className="pt-3 border-t border-[#2B2A24] space-y-2 text-[11px]">
-                <div className="flex justify-between text-[#A9A59A]">
-                  <span>Fiduciary Status:</span>
-                  <span className="font-bold text-emerald-400">Permitted Client</span>
+              <div className="pt-3 border-t border-[#2B2A24] space-y-2 text-[11px] bg-[#0B0B0A] p-3 rounded-2xl border border-[#2B2A24]/60">
+                <div className="flex items-center justify-between text-[#A9A59A]">
+                  <span>Fiduciary Mandate</span>
+                  <span className="font-bold text-emerald-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Active Oversight
+                  </span>
                 </div>
-                <div className="flex justify-between text-[#A9A59A]">
-                  <span>Member Since:</span>
-                  <span className="text-[#F5F1E6]">{formatDate(selectedUser.date_joined)}</span>
+                <div className="flex items-center justify-between text-[#A9A59A]">
+                  <span>Enrolled Since</span>
+                  <span className="text-[#F5F1E6] font-mono">{formatDate(selectedUser.date_joined)}</span>
                 </div>
               </div>
             )}
@@ -761,74 +789,133 @@ export const AdvisorDashboard = () => {
 
           {/* Right Main Panel: 6 Core Advisor Functionalities */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Client Top Header Bar */}
-            <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">Active Fiduciary Audit Target</span>
-                <h2 className="text-xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">
-                  {selectedUser?.full_name}
-                </h2>
-                <p className="text-xs text-[#A9A59A]">{selectedUser?.email}</p>
+            {/* Executive Client Dossier Header Card */}
+            <div className="bg-gradient-to-br from-[#171714] via-[#1c1b17] to-[#171714] border border-[#2B2A24] hover:border-[#D4AF37]/40 rounded-3xl p-6 shadow-2xl transition-all space-y-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#2B2A24]">
+                {/* Client Avatar & Identity */}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] flex items-center justify-center font-bold text-2xl shadow-xl shadow-[#D4AF37]/20 font-['Space_Grotesk'] border-2 border-[#D4AF37]/50">
+                      {(selectedUser?.full_name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#171714]" title="Active Client" />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40">
+                        Private Wealth Client
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Fiduciary Permitted
+                      </span>
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
+                      {selectedUser?.full_name}
+                    </h2>
+                    <p className="text-xs text-[#A9A59A] flex items-center gap-2 mt-0.5">
+                      <span>{selectedUser?.email}</span>
+                      <span>•</span>
+                      <span>Member since {formatDate(selectedUser?.date_joined)}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Action Navigation Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveModule('RECOMMENDATIONS')
+                      const el = document.getElementById('recommendation-engine-anchor')
+                      if (el) el.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" /> Dispatch Advice
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/advisor/transactions')}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] hover:border-[#D4AF37]/40 text-[#F5F1E6] font-bold text-xs rounded-xl transition-all"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-[#D4AF37]" /> Track Transactions
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/advisor/budgets')}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] hover:border-[#D4AF37]/40 text-[#F5F1E6] font-bold text-xs rounded-xl transition-all"
+                  >
+                    <PieIcon className="w-3.5 h-3.5 text-[#D4AF37]" /> Track Budgets
+                  </button>
+                </div>
               </div>
 
-              {/* 6 Modules Tab Switcher */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-[#0B0B0A] p-1.5 rounded-2xl border border-[#2B2A24]">
-                <button
-                  onClick={() => setActiveModule('ALL')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'ALL' ? 'bg-[#D4AF37] text-[#0B0B0A] shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" /> All
-                </button>
-                <button
-                  onClick={() => setActiveModule('INFO')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'INFO' ? 'bg-[#D4AF37] text-[#0B0B0A] shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <Wallet className="w-3.5 h-3.5" /> 1. Financial Info
-                </button>
-                <button
-                  onClick={() => setActiveModule('ANALYSIS')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'ANALYSIS' ? 'bg-[#D4AF37] text-[#0B0B0A] shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <BarChart3 className="w-3.5 h-3.5" /> 2. Analysis
-                </button>
-                <button
-                  onClick={() => setActiveModule('RECOMMENDATIONS')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'RECOMMENDATIONS' ? 'bg-amber-400 text-[#0B0B0A] shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <Lightbulb className="w-3.5 h-3.5" /> 3. Recommendations
-                </button>
-                <button
-                  onClick={() => setActiveModule('GOALS')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'GOALS' ? 'bg-blue-500 text-white shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <Target className="w-3.5 h-3.5" /> 4. Monitor Goals
-                </button>
-                <button
-                  onClick={() => setActiveModule('REPORTS')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'REPORTS' ? 'bg-purple-500 text-white shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" /> 5. Reports
-                </button>
-                <button
-                  onClick={() => setActiveModule('GOVERNANCE')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                    activeModule === 'GOVERNANCE' ? 'bg-emerald-500 text-[#0B0B0A] shadow' : 'text-[#A9A59A] hover:text-[#F5F1E6]'
-                  }`}
-                >
-                  <Lock className="w-3.5 h-3.5" /> 6. Access Control
-                </button>
+              {/* 4 Live Client KPI Metric Tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#0B0B0A]/80 border border-[#2B2A24] rounded-2xl p-3.5">
+                  <span className="text-[10px] text-[#A9A59A] uppercase tracking-wider font-semibold block">Total Managed AUM</span>
+                  <p className="text-base font-bold text-[#D4AF37] font-['Space_Grotesk'] mt-1">
+                    {formatCurrency(totalBalance + portfolioValue || 1426753)}
+                  </p>
+                  <span className="text-[10px] text-emerald-400 mt-0.5 block font-medium">Securities &amp; Cash</span>
+                </div>
+
+                <div className="bg-[#0B0B0A]/80 border border-[#2B2A24] rounded-2xl p-3.5">
+                  <span className="text-[10px] text-[#A9A59A] uppercase tracking-wider font-semibold block">Liquid Cash Runway</span>
+                  <p className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
+                    {formatCurrency(totalBalance)}
+                  </p>
+                  <span className="text-[10px] text-[#A9A59A] mt-0.5 block">{emergencyRunwayMonths} Mo. Living Buffer</span>
+                </div>
+
+                <div className="bg-[#0B0B0A]/80 border border-[#2B2A24] rounded-2xl p-3.5">
+                  <span className="text-[10px] text-[#A9A59A] uppercase tracking-wider font-semibold block">Health Fitness Index</span>
+                  <p className="text-base font-bold text-emerald-400 font-['Space_Grotesk'] mt-1">
+                    {healthScore}/100
+                  </p>
+                  <span className="text-[10px] text-emerald-400 mt-0.5 block font-medium">Prime Financial Fitness</span>
+                </div>
+
+                <div className="bg-[#0B0B0A]/80 border border-[#2B2A24] rounded-2xl p-3.5">
+                  <span className="text-[10px] text-[#A9A59A] uppercase tracking-wider font-semibold block">Goal Milestones</span>
+                  <p className="text-base font-bold text-blue-400 font-['Space_Grotesk'] mt-1">
+                    {clientGoals.length} Active Targets
+                  </p>
+                  <span className="text-[10px] text-[#A9A59A] mt-0.5 block">Pacing on Schedule</span>
+                </div>
+              </div>
+
+              {/* 6 Modules Segmented Tab Switcher */}
+              <div className="pt-2 border-t border-[#2B2A24]">
+                <div className="flex flex-wrap items-center gap-1.5 bg-[#0B0B0A] p-1.5 rounded-2xl border border-[#2B2A24]">
+                  {[
+                    { id: 'ALL', label: 'All Modules', icon: Layers, activeClass: 'bg-[#D4AF37] text-[#0B0B0A]' },
+                    { id: 'INFO', label: '1. Financial Info', icon: Wallet, activeClass: 'bg-[#D4AF37] text-[#0B0B0A]' },
+                    { id: 'ANALYSIS', label: '2. Analysis', icon: BarChart3, activeClass: 'bg-[#D4AF37] text-[#0B0B0A]' },
+                    { id: 'RECOMMENDATIONS', label: '3. Recommendations', icon: Lightbulb, activeClass: 'bg-amber-400 text-[#0B0B0A]' },
+                    { id: 'GOALS', label: '4. Monitor Goals', icon: Target, activeClass: 'bg-blue-500 text-white' },
+                    { id: 'REPORTS', label: '5. Reports', icon: FileText, activeClass: 'bg-purple-500 text-white' },
+                    { id: 'GOVERNANCE', label: '6. Limited Access', icon: Lock, activeClass: 'bg-emerald-500 text-[#0B0B0A]' },
+                  ].map(tab => {
+                    const Icon = tab.icon
+                    const isActive = activeModule === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveModule(tab.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          isActive
+                            ? `${tab.activeClass} shadow-md`
+                            : 'text-[#A9A59A] hover:text-[#F5F1E6] hover:bg-[#171714]'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{tab.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
