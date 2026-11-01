@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Search, User, Shield, LogOut, Sparkles, ChevronDown, CheckCircle2, Sun, Moon } from 'lucide-react'
+import { Bell, Search, User, LogOut, Sparkles, ChevronDown, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useNotification } from '../context/NotificationContext'
@@ -179,13 +179,6 @@ export const Header = ({ onOpenQuickAdd }) => {
                 className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-[#A9A59A] hover:text-[#F5F1E6] hover:bg-[#21201B]"
               >
                 <User className="w-4 h-4 text-[#D4AF37]" /> Account Profile
-              </Link>
-              <Link
-                to="/financial-health"
-                onClick={() => setDropdownOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-[#A9A59A] hover:text-[#F5F1E6] hover:bg-[#21201B]"
-              >
-                <Shield className="w-4 h-4 text-[#D4AF37]" /> Financial Health & Security
               </Link>
 
               <div className="border-t border-[#2B2A24] mt-1 pt-1">

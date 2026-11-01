@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   UserCheck,
   Users,
-  HeartPulse,
   LogOut,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -32,7 +31,6 @@ export const Sidebar = () => {
     { name: 'Goals', path: '/goals', icon: Target },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Financial Health', path: '/financial-health', icon: HeartPulse },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]

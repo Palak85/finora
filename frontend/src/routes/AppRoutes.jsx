@@ -17,7 +17,6 @@ import { Investments } from '../pages/Investments'
 import { Goals } from '../pages/Goals'
 import { Analytics } from '../pages/Analytics'
 import { Reports } from '../pages/Reports'
-import { FinancialHealth } from '../pages/FinancialHealth'
 import { Notifications } from '../pages/Notifications'
 import { Settings } from '../pages/Settings'
 import { AdvisorDashboard } from '../pages/AdvisorDashboard'
@@ -74,7 +73,7 @@ export const AppRoutes = () => {
         <Route path="/goals" element={<Goals />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/financial-health" element={<FinancialHealth />} />
+        <Route path="/financial-health" element={<Navigate to="/dashboard" replace />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />
 

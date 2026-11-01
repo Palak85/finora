@@ -144,9 +144,6 @@ export const Dashboard = () => {
               <p className="text-[11px] text-[#A9A59A] mt-0.5">
                 {financial_health_score >= 80 ? 'Excellent Stability' : 'Good Progress'} • Savings Rate <span className="text-[#D4AF37] font-bold">{savings_rate}%</span>
               </p>
-              <Link to="/financial-health" className="text-[11px] text-[#D4AF37] font-semibold hover:underline mt-1 inline-block">
-                View Health Breakdown →
-              </Link>
             </div>
           </div>
         </div>

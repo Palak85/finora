@@ -13,7 +13,6 @@ import {
   FileText,
   Bell,
   Settings,
-  HeartPulse,
   X
 } from 'lucide-react'
 
@@ -32,7 +31,6 @@ export const MobileNav = ({ onOpenQuickAdd }) => {
     { name: 'Goals', path: '/goals', icon: Target },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Health', path: '/financial-health', icon: HeartPulse },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]
