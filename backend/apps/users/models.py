@@ -137,3 +137,26 @@ class AdvisorRequest(models.Model):
     def __str__(self):
         return f"Request #{self.id}: {self.customer.full_name} -> {self.advisor.full_name} ({self.status})"
 
+class SystemConfiguration(models.Model):
+    app_name = models.CharField(max_length=150, default='FINORA Pro – Private Wealth Suite')
+    app_description = models.CharField(max_length=255, default='Fiduciary Online Banking & Personal Wealth Management System')
+    default_currency = models.CharField(max_length=20, default='INR (₹)')
+    timezone_pref = models.CharField(max_length=50, default='Asia/Kolkata (IST UTC+5:30)')
+    date_format = models.CharField(max_length=50, default='DD MMM YYYY')
+    theme_mode = models.CharField(max_length=50, default='Dark Gold Luxury')
+    advisor_assignment_mode = models.CharField(max_length=100, default='Client Request & Fiduciary Approval')
+    allow_customer_registration = models.BooleanField(default=True)
+    maintenance_mode = models.BooleanField(default=False)
+    email_alerts_enabled = models.BooleanField(default=True)
+    security_audit_logging = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey('users.User', null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = 'system_configuration'
+        verbose_name = 'System Configuration'
+        verbose_name_plural = 'System Configuration'
+
+    def __str__(self):
+        return f"{self.app_name} ({self.default_currency})"
+

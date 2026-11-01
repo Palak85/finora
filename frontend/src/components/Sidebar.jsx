@@ -17,7 +17,11 @@ import {
   Compass,
   Sparkles,
   LogOut,
-  ArrowRight
+  ArrowRight,
+  Briefcase,
+  Lock,
+  Sliders,
+  Shield
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -56,7 +60,11 @@ export const Sidebar = () => {
   const adminLinks = [
     { name: 'Admin Console', path: '/admin', icon: ShieldCheck },
     { name: 'User Management', path: '/admin/users', icon: Users },
+    { name: 'Advisor Management', path: '/admin/advisors', icon: Briefcase },
+    { name: 'Customer Management', path: '/admin/customers', icon: UserCheck },
+    { name: 'Security & Access Control', path: '/admin/security', icon: Lock },
     { name: 'Audit Logs', path: '/admin/audit-logs', icon: FileText },
+    { name: 'System Settings', path: '/admin/settings', icon: Sliders },
   ]
 
   return (

@@ -7,7 +7,10 @@ from apps.users.views import (
     AvailableAdvisorsView, CustomerAdvisorView,
     CustomerAdvisorRequestCreateView, CustomerAdvisorRequestCancelView,
     AdvisorRequestsListView, AdvisorRequestAcceptView,
-    AdvisorRequestRejectView, AdvisorAssignedClientsView
+    AdvisorRequestRejectView, AdvisorAssignedClientsView,
+    AdminStatsView, AdminAdvisorsView, AdminAdvisorDetailView,
+    AdminAdvisorToggleStatusView, AdminCustomersView, AdminCustomerDetailView,
+    AdminCustomerToggleStatusView, AdminSecurityView, AdminSystemSettingsView
 )
 
 urlpatterns = [
@@ -29,6 +32,28 @@ urlpatterns = [
     path('api/advisor/customer-requests/<int:id>/accept/', AdvisorRequestAcceptView.as_view(), name='advisor_accept_request'),
     path('api/advisor/customer-requests/<int:id>/reject/', AdvisorRequestRejectView.as_view(), name='advisor_reject_request'),
     path('api/advisor/assigned-clients/', AdvisorAssignedClientsView.as_view(), name='advisor_assigned_clients'),
+    
+    # Dedicated System Administrator Endpoints
+    path('api/admin/stats/', AdminStatsView.as_view(), name='admin_console_stats'),
+    path('api/admin/advisors/', AdminAdvisorsView.as_view(), name='admin_advisors_list'),
+    path('api/admin/advisors/<int:id>/', AdminAdvisorDetailView.as_view(), name='admin_advisor_detail'),
+    path('api/admin/advisors/<int:id>/toggle-status/', AdminAdvisorToggleStatusView.as_view(), name='admin_advisor_toggle_status'),
+    path('api/admin/customers/', AdminCustomersView.as_view(), name='admin_customers_list'),
+    path('api/admin/customers/<int:id>/', AdminCustomerDetailView.as_view(), name='admin_customer_detail'),
+    path('api/admin/customers/<int:id>/toggle-status/', AdminCustomerToggleStatusView.as_view(), name='admin_customer_toggle_status'),
+    path('api/admin/security/', AdminSecurityView.as_view(), name='admin_security_overview'),
+    path('api/admin/settings/', AdminSystemSettingsView.as_view(), name='admin_system_settings'),
+    
+    # Dedicated System Administrator Endpoints
+    path('api/admin/stats/', AdminStatsView.as_view(), name='admin_console_stats'),
+    path('api/admin/advisors/', AdminAdvisorsView.as_view(), name='admin_advisors_list'),
+    path('api/admin/advisors/<int:id>/', AdminAdvisorDetailView.as_view(), name='admin_advisor_detail'),
+    path('api/admin/advisors/<int:id>/toggle-status/', AdminAdvisorToggleStatusView.as_view(), name='admin_advisor_toggle_status'),
+    path('api/admin/customers/', AdminCustomersView.as_view(), name='admin_customers_list'),
+    path('api/admin/customers/<int:id>/', AdminCustomerDetailView.as_view(), name='admin_customer_detail'),
+    path('api/admin/customers/<int:id>/toggle-status/', AdminCustomerToggleStatusView.as_view(), name='admin_customer_toggle_status'),
+    path('api/admin/security/', AdminSecurityView.as_view(), name='admin_security_overview'),
+    path('api/admin/settings/', AdminSystemSettingsView.as_view(), name='admin_system_settings'),
     
     # Application REST APIs
     path('api/users/', include('apps.users.urls')),

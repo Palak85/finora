@@ -15,7 +15,8 @@ from apps.transactions.models import Transaction
 
 from django.db import transaction as db_transaction
 from django.utils import timezone
-from .models import AdvisorAssignment, AdvisorRequest
+from .models import AdvisorAssignment, AdvisorRequest, SystemConfiguration
+from django.db.models import Q
 User = get_user_model()
 
 
@@ -483,39 +484,104 @@ class AdminStatsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        total_users = User.objects.count()
+        total_customers = User.objects.filter(role='CUSTOMER').count()
+        total_advisors = User.objects.filter(role='FINANCIAL_ADVISOR').count()
         active_users = User.objects.filter(is_active=True).count()
         inactive_users = User.objects.filter(is_active=False).count()
+        pending_advisor_requests = AdvisorRequest.objects.filter(status='PENDING').count()
+        active_advisor_assignments = AdvisorAssignment.objects.count()
+        inactive_accounts = Account.objects.filter(status__in=['Inactive', 'Blocked']).count() if hasattr(Account, 'status') else inactive_users
 
+        total_users = User.objects.count()
         total_accounts = Account.objects.count()
         active_accounts = Account.objects.filter(status='Active').count() if hasattr(Account, 'status') else total_accounts
         total_transactions = Transaction.objects.count()
         pending_alerts = Notification.objects.filter(is_read=False).count()
 
         roles_breakdown = {
-            'CUSTOMER': User.objects.filter(role='CUSTOMER').count(),
-            'FINANCIAL_ADVISOR': User.objects.filter(role='FINANCIAL_ADVISOR').count(),
+            'CUSTOMER': total_customers,
+            'FINANCIAL_ADVISOR': total_advisors,
             'ADMINISTRATOR': User.objects.filter(role='ADMINISTRATOR').count(),
         }
 
-        # Account status breakdown
         account_status_breakdown = {
-            'Active': Account.objects.filter(status='Active').count() if hasattr(Account, 'status') else total_accounts,
+            'Active': active_accounts,
             'Inactive': Account.objects.filter(status='Inactive').count() if hasattr(Account, 'status') else 0,
             'Blocked': Account.objects.filter(status='Blocked').count() if hasattr(Account, 'status') else 0,
         }
 
-        # Transaction breakdown
         income_tx = Transaction.objects.filter(transaction_type='INCOME').count()
         expense_tx = Transaction.objects.filter(transaction_type='EXPENSE').count()
         investment_tx = Transaction.objects.filter(transaction_type='INVESTMENT').count()
         transfer_tx = Transaction.objects.filter(transaction_type='TRANSFER').count()
 
-        # Recent activities (latest 8 audit logs)
+        # 1. Recent User Registrations (latest 6)
+        recent_reg_qs = User.objects.order_by('-date_joined')[:6]
+        recent_registrations = []
+        for u in recent_reg_qs:
+            recent_registrations.append({
+                'id': u.id,
+                'full_name': u.full_name,
+                'email': u.email,
+                'role': u.role,
+                'date_joined': u.date_joined,
+                'is_active': u.is_active,
+            })
+
+        # 2. Recent Advisor Requests (latest 6)
+        recent_req_qs = AdvisorRequest.objects.select_related('customer', 'advisor').order_by('-created_at')[:6]
+        recent_advisor_requests = []
+        for r in recent_req_qs:
+            recent_advisor_requests.append({
+                'id': r.id,
+                'customer_name': r.customer.full_name,
+                'customer_email': r.customer.email,
+                'advisor_name': r.advisor.full_name,
+                'status': r.status,
+                'request_date': r.request_date,
+            })
+
+        # 3. Recent Security Activity
+        security_logs = AuditLog.objects.filter(
+            Q(action__icontains='LOGIN') |
+            Q(action__icontains='SECURITY') |
+            Q(action__icontains='PASSWORD') |
+            Q(action__icontains='AUTH')
+        ).select_related('user').order_by('-timestamp')[:6]
+        recent_security_activity = []
+        for l in security_logs:
+            recent_security_activity.append({
+                'id': l.id,
+                'user_email': l.user.email if l.user else 'System',
+                'action': l.action,
+                'ip_address': l.ip_address or '127.0.0.1',
+                'timestamp': l.timestamp,
+                'status': l.details.get('status', 'Logged') if isinstance(l.details, dict) else 'Logged',
+            })
+
+        # 4. Recent Administrative Actions
+        admin_logs = AuditLog.objects.filter(
+            user__role='ADMINISTRATOR'
+        ).exclude(
+            action__in={'SEED_DEMO_DATA', 'DATA_PROVISIONED', 'SYSTEM_INIT'}
+        ).select_related('user').order_by('-timestamp')[:6]
+        recent_admin_actions = []
+        for l in admin_logs:
+            desc = l.details.get('description') if isinstance(l.details, dict) and l.details.get('description') else f"{l.action} executed"
+            recent_admin_actions.append({
+                'id': l.id,
+                'admin_email': l.user.email if l.user else 'System Admin',
+                'action': l.action,
+                'module': l.details.get('module', 'Administration') if isinstance(l.details, dict) else 'Administration',
+                'description': desc,
+                'timestamp': l.timestamp,
+                'ip_address': l.ip_address or '127.0.0.1',
+            })
+
+        # General recent activities
         recent_logs = AuditLog.objects.exclude(
             action__in={'SEED_DEMO_DATA', 'DATA_PROVISIONED', 'SYSTEM_INIT'}
         ).select_related('user').order_by('-timestamp')[:8]
-
         recent_activities = []
         for l in recent_logs:
             module = l.details.get('module') if isinstance(l.details, dict) and l.details.get('module') else 'Administration'
@@ -533,28 +599,17 @@ class AdminStatsView(APIView):
                 'timestamp': l.timestamp
             })
 
-        # Recent security alerts
-        security_notifications = Notification.objects.filter(
-            notification_type='Security'
-        ).select_related('user').order_by('-created_at')[:5]
-
-        security_alerts = []
-        for n in security_notifications:
-            security_alerts.append({
-                'id': n.id,
-                'user_email': n.user.email,
-                'title': n.title,
-                'message': n.message,
-                'created_at': n.created_at,
-                'is_read': n.is_read
-            })
-
         return Response({
             'success': True,
             'data': {
-                'total_users': total_users,
+                'total_customers': total_customers,
+                'total_advisors': total_advisors,
                 'active_users': active_users,
                 'inactive_users': inactive_users,
+                'pending_advisor_requests': pending_advisor_requests,
+                'active_advisor_assignments': active_advisor_assignments,
+                'inactive_accounts': inactive_accounts,
+                'total_users': total_users,
                 'total_accounts': total_accounts,
                 'active_accounts': active_accounts,
                 'total_transactions': total_transactions,
@@ -567,8 +622,11 @@ class AdminStatsView(APIView):
                     'investment_count': investment_tx,
                     'transfer_count': transfer_tx,
                 },
+                'recent_registrations': recent_registrations,
+                'recent_advisor_requests': recent_advisor_requests,
+                'recent_security_activity': recent_security_activity,
+                'recent_admin_actions': recent_admin_actions,
                 'recent_activities': recent_activities,
-                'security_alerts': security_alerts,
                 'system_status': {
                     'database': 'Operational (SQLite 3.x)',
                     'jwt_auth': '256-Bit HS256 Active',
@@ -578,7 +636,6 @@ class AdminStatsView(APIView):
                 }
             }
         })
-
 
 class AvailableAdvisorsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -1034,5 +1091,513 @@ class AdvisorAssignedClientsView(APIView):
             'success': True,
             'count': len(clients),
             'data': clients
+        })
+
+# =========================================================================
+# SYSTEM ADMINISTRATOR: ADVISOR MANAGEMENT APIS
+# =========================================================================
+
+class AdminAdvisorsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        advisors = User.objects.filter(role='FINANCIAL_ADVISOR').order_by('-date_joined')
+        data = []
+        for a in advisors:
+            # Query assigned customers
+            assignments = AdvisorAssignment.objects.filter(advisor=a).select_related('customer')
+            assigned_customers = [
+                {
+                    'id': asg.customer.id,
+                    'full_name': asg.customer.full_name,
+                    'email': asg.customer.email,
+                    'phone': asg.customer.phone or '',
+                    'assigned_date': asg.assigned_date,
+                    'is_active': asg.customer.is_active,
+                }
+                for asg in assignments
+            ]
+
+            # Query pending requests
+            pending_reqs = AdvisorRequest.objects.filter(advisor=a, status='PENDING').select_related('customer')
+            pending_requests = [
+                {
+                    'id': pr.id,
+                    'customer_id': pr.customer.id,
+                    'customer_name': pr.customer.full_name,
+                    'customer_email': pr.customer.email,
+                    'request_date': pr.request_date,
+                    'message': pr.message,
+                }
+                for pr in pending_reqs
+            ]
+
+            data.append({
+                'id': a.id,
+                'full_name': a.full_name,
+                'email': a.email,
+                'phone': a.phone or '+91 98765 11111',
+                'specialization': a.specialization or 'Private Wealth Management',
+                'experience': a.experience or '8+ Years Fiduciary Advisory',
+                'bio': a.bio or '',
+                'is_active': a.is_active,
+                'status': 'Active' if a.is_active else 'Inactive',
+                'assigned_customer_count': len(assigned_customers),
+                'pending_request_count': len(pending_requests),
+                'max_capacity': 15,
+                'capacity_percentage': min(100, int((len(assigned_customers) / 15) * 100)),
+                'date_joined': a.date_joined,
+                'assigned_customers': assigned_customers,
+                'pending_requests': pending_requests,
+            })
+
+        return Response({
+            'success': True,
+            'count': len(data),
+            'data': data
+        })
+
+
+class AdminAdvisorDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, id):
+        try:
+            advisor = User.objects.get(id=id, role='FINANCIAL_ADVISOR')
+        except User.DoesNotExist:
+            return Response({'success': False, 'message': 'Advisor not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        if 'full_name' in data:
+            advisor.full_name = data['full_name'].strip()
+        if 'phone' in data:
+            advisor.phone = data['phone'].strip()
+        if 'specialization' in data:
+            advisor.specialization = data['specialization'].strip()
+        if 'experience' in data:
+            advisor.experience = data['experience'].strip()
+        if 'bio' in data:
+            advisor.bio = data['bio'].strip()
+        if 'is_active' in data:
+            advisor.is_active = bool(data['is_active'])
+
+        advisor.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            user=request.user,
+            action='ADVISOR_PROFILE_UPDATED',
+            ip_address=get_client_ip(request),
+            details={
+                'module': 'Advisor Management',
+                'advisor_id': advisor.id,
+                'advisor_email': advisor.email,
+                'description': f"Admin updated advisor details for {advisor.full_name} ({advisor.email})"
+            }
+        )
+
+        return Response({
+            'success': True,
+            'message': f"Advisor {advisor.full_name} updated successfully.",
+            'data': {
+                'id': advisor.id,
+                'full_name': advisor.full_name,
+                'email': advisor.email,
+                'phone': advisor.phone,
+                'specialization': advisor.specialization,
+                'experience': advisor.experience,
+                'bio': advisor.bio,
+                'is_active': advisor.is_active,
+            }
+        })
+
+
+class AdminAdvisorToggleStatusView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, id):
+        try:
+            advisor = User.objects.get(id=id, role='FINANCIAL_ADVISOR')
+        except User.DoesNotExist:
+            return Response({'success': False, 'message': 'Advisor not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        advisor.is_active = not advisor.is_active
+        advisor.save()
+
+        action_name = 'ADVISOR_ACTIVATED' if advisor.is_active else 'ADVISOR_DEACTIVATED'
+        status_label = 'Active' if advisor.is_active else 'Inactive'
+
+        AuditLog.objects.create(
+            user=request.user,
+            action=action_name,
+            ip_address=get_client_ip(request),
+            details={
+                'module': 'Advisor Management',
+                'advisor_id': advisor.id,
+                'advisor_email': advisor.email,
+                'status': status_label,
+                'description': f"Admin toggled advisor status to {status_label} for {advisor.full_name}."
+            }
+        )
+
+        return Response({
+            'success': True,
+            'message': f"Advisor {advisor.full_name} is now {status_label}.",
+            'is_active': advisor.is_active,
+            'status': status_label
+        })
+
+
+# =========================================================================
+# SYSTEM ADMINISTRATOR: CUSTOMER MANAGEMENT APIS
+# =========================================================================
+
+class AdminCustomersView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        customers = User.objects.filter(role='CUSTOMER').select_related('advisor_assignment__advisor').order_by('-date_joined')
+        data = []
+        for c in customers:
+            # Check advisor assignment
+            assigned_advisor = None
+            assignment_status = 'No Advisor Assigned'
+
+            if hasattr(c, 'advisor_assignment') and c.advisor_assignment and c.advisor_assignment.advisor:
+                adv = c.advisor_assignment.advisor
+                assigned_advisor = {
+                    'id': adv.id,
+                    'full_name': adv.full_name,
+                    'email': adv.email,
+                    'phone': adv.phone or '',
+                    'specialization': c.advisor_assignment.specialization or adv.specialization,
+                    'assigned_date': c.advisor_assignment.assigned_date,
+                    'is_active': adv.is_active,
+                }
+                assignment_status = 'Advisor Assigned'
+            else:
+                # Check pending request
+                pending_req = AdvisorRequest.objects.filter(customer=c, status='PENDING').select_related('advisor').first()
+                if pending_req:
+                    assignment_status = 'Request Pending'
+
+            # Request history
+            req_history = [
+                {
+                    'id': r.id,
+                    'advisor_name': r.advisor.full_name,
+                    'advisor_email': r.advisor.email,
+                    'advisor_specialization': r.advisor.specialization,
+                    'status': r.status,
+                    'request_date': r.request_date,
+                    'accepted_at': r.accepted_at,
+                    'rejected_at': r.rejected_at,
+                    'cancelled_at': r.cancelled_at,
+                    'message': r.message,
+                    'rejection_reason': r.rejection_reason,
+                }
+                for r in AdvisorRequest.objects.filter(customer=c).select_related('advisor').order_by('-created_at')[:10]
+            ]
+
+            data.append({
+                'id': c.id,
+                'full_name': c.full_name,
+                'email': c.email,
+                'phone': c.phone or '+91 98765 43210',
+                'is_active': c.is_active,
+                'status': 'Active' if c.is_active else 'Inactive',
+                'assigned_advisor': assigned_advisor,
+                'advisor_assignment_status': assignment_status,
+                'date_joined': c.date_joined,
+                'request_history': req_history,
+            })
+
+        return Response({
+            'success': True,
+            'count': len(data),
+            'data': data
+        })
+
+
+class AdminCustomerDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, id):
+        try:
+            customer = User.objects.get(id=id, role='CUSTOMER')
+        except User.DoesNotExist:
+            return Response({'success': False, 'message': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        if 'full_name' in data:
+            customer.full_name = data['full_name'].strip()
+        if 'phone' in data:
+            customer.phone = data['phone'].strip()
+        if 'is_active' in data:
+            customer.is_active = bool(data['is_active'])
+
+        customer.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            user=request.user,
+            action='CUSTOMER_PROFILE_UPDATED',
+            ip_address=get_client_ip(request),
+            details={
+                'module': 'Customer Management',
+                'customer_id': customer.id,
+                'customer_email': customer.email,
+                'description': f"Admin updated customer details for {customer.full_name} ({customer.email})"
+            }
+        )
+
+        return Response({
+            'success': True,
+            'message': f"Customer {customer.full_name} updated successfully.",
+            'data': {
+                'id': customer.id,
+                'full_name': customer.full_name,
+                'email': customer.email,
+                'phone': customer.phone,
+                'is_active': customer.is_active,
+            }
+        })
+
+
+class AdminCustomerToggleStatusView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, id):
+        try:
+            customer = User.objects.get(id=id, role='CUSTOMER')
+        except User.DoesNotExist:
+            return Response({'success': False, 'message': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        customer.is_active = not customer.is_active
+        customer.save()
+
+        action_name = 'CUSTOMER_ACTIVATED' if customer.is_active else 'CUSTOMER_DEACTIVATED'
+        status_label = 'Active' if customer.is_active else 'Inactive'
+
+        AuditLog.objects.create(
+            user=request.user,
+            action=action_name,
+            ip_address=get_client_ip(request),
+            details={
+                'module': 'Customer Management',
+                'customer_id': customer.id,
+                'customer_email': customer.email,
+                'status': status_label,
+                'description': f"Admin toggled customer status to {status_label} for {customer.full_name}."
+            }
+        )
+
+        return Response({
+            'success': True,
+            'message': f"Customer {customer.full_name} is now {status_label}.",
+            'is_active': customer.is_active,
+            'status': status_label
+        })
+
+
+# =========================================================================
+# SYSTEM ADMINISTRATOR: SECURITY & ACCESS CONTROL APIS
+# =========================================================================
+
+class AdminSecurityView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        admin_count = User.objects.filter(role='ADMINISTRATOR').count()
+        advisor_count = User.objects.filter(role='FINANCIAL_ADVISOR').count()
+        customer_count = User.objects.filter(role='CUSTOMER').count()
+
+        roles = [
+            {
+                'role': 'ADMINISTRATOR',
+                'label': 'System Administrator',
+                'description': 'Full governance, user lifecycle management, audit trail inspection & platform controls',
+                'users_count': admin_count,
+                'permissions': [
+                    'Admin Console Telemetry Access',
+                    'User Management (Create, Edit, Toggle, Delete)',
+                    'Advisor Management (Profile, Clients, Status)',
+                    'Customer Management (Assignments, Request History)',
+                    'Full Audit Logs Inspection',
+                    'Security Policy & RBAC Governance',
+                    'System Settings Configuration'
+                ]
+            },
+            {
+                'role': 'FINANCIAL_ADVISOR',
+                'label': 'Financial Advisor',
+                'description': 'Fiduciary wealth monitoring, client request evaluation, budget compliance & strategic advice',
+                'users_count': advisor_count,
+                'permissions': [
+                    'Client Portfolio Surveillance (Read-Only)',
+                    'Customer Requests Evaluation (Accept/Reject)',
+                    'Transaction & Cash Outflow Monitoring',
+                    'Budget Adherence & Burn Rate Tracking',
+                    'Client Financial Health Audit',
+                    'Coaching Advice & Signal Dispatching'
+                ]
+            },
+            {
+                'role': 'CUSTOMER',
+                'label': 'Wealth Client (Customer)',
+                'description': 'Private wealth banking, portfolio self-service, goal tracking & advisor engagement',
+                'users_count': customer_count,
+                'permissions': [
+                    'Personal Accounts & Balance Overview',
+                    'Transaction Creation & History',
+                    'Budget Limit Creation & Tracking',
+                    'Investment Asset Tracking',
+                    'Life Goals Contribution',
+                    'Available Financial Advisors Directory',
+                    'Advisor Request Submission & Cancellation'
+                ]
+            }
+        ]
+
+        matrix = [
+            {'module': 'Dashboard & Banking Ledgers', 'customer': 'Read/Write (Own)', 'advisor': 'Read-Only (Assigned Clients)', 'admin': 'Telemetry & Read-Only'},
+            {'module': 'Transactions & Transfers', 'customer': 'Full Operations', 'advisor': 'Surveillance Audit Only', 'admin': 'Surveillance & Audit'},
+            {'module': 'Budgets & Expense Tracking', 'customer': 'Full Operations', 'advisor': 'Compliance Tracking Only', 'admin': 'Read-Only Oversight'},
+            {'module': 'Investments Portfolio', 'customer': 'Personal Holdings', 'advisor': 'AUM Multi-Asset Audit', 'admin': 'Platform AUM Metrics'},
+            {'module': 'Advisor Requests & Directory', 'customer': 'Browse & Submit', 'advisor': 'Evaluate, Accept & Reject', 'admin': 'Assignment Monitoring'},
+            {'module': 'User Management & Roles', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Full Administrative Control'},
+            {'module': 'Audit Logs & Governance', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Full Immutable Audit Access'},
+            {'module': 'System Settings & Config', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Full Configuration Control'},
+        ]
+
+        security_config = {
+            'auth_method': 'JWT (JSON Web Token)',
+            'token_algorithm': 'HS256 256-Bit Cryptographic Signature',
+            'access_token_lifetime': '60 Minutes (Rotating)',
+            'refresh_token_lifetime': '7 Days',
+            'password_hasher': 'PBKDF2 with SHA-256 (Django Cryptographic Core)',
+            'rbac_enforcement': 'Dual-Layer (Django Permissions + React Route Guards)',
+            'ip_tracking': 'Active via RemoteAddr & X-Forwarded-For',
+            'active_sessions_estimated': User.objects.filter(is_active=True).count(),
+        }
+
+        # Latest security logs
+        sec_logs = AuditLog.objects.filter(
+            Q(action__icontains='LOGIN') |
+            Q(action__icontains='SECURITY') |
+            Q(action__icontains='PASSWORD') |
+            Q(action__icontains='AUTH') |
+            Q(action__icontains='ROLE')
+        ).select_related('user').order_by('-timestamp')[:10]
+
+        recent_logs = [
+            {
+                'id': sl.id,
+                'user_email': sl.user.email if sl.user else 'System',
+                'action': sl.action,
+                'ip_address': sl.ip_address or '127.0.0.1',
+                'timestamp': sl.timestamp,
+                'details': sl.details
+            }
+            for sl in sec_logs
+        ]
+
+        return Response({
+            'success': True,
+            'roles': roles,
+            'security_matrix': matrix,
+            'security_config': security_config,
+            'recent_security_logs': recent_logs
+        })
+
+
+# =========================================================================
+# SYSTEM ADMINISTRATOR: SYSTEM SETTINGS APIS
+# =========================================================================
+
+class AdminSystemSettingsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        return Response({
+            'success': True,
+            'data': {
+                'app_name': config.app_name,
+                'app_description': config.app_description,
+                'default_currency': config.default_currency,
+                'timezone_pref': config.timezone_pref,
+                'date_format': config.date_format,
+                'theme_mode': config.theme_mode,
+                'advisor_assignment_mode': config.advisor_assignment_mode,
+                'allow_customer_registration': config.allow_customer_registration,
+                'maintenance_mode': config.maintenance_mode,
+                'email_alerts_enabled': config.email_alerts_enabled,
+                'security_audit_logging': config.security_audit_logging,
+                'updated_at': config.updated_at,
+                'updated_by': config.updated_by.email if config.updated_by else 'System Administrator',
+            }
+        })
+
+    def patch(self, request):
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        data = request.data
+
+        if 'app_name' in data:
+            config.app_name = str(data['app_name']).strip()
+        if 'app_description' in data:
+            config.app_description = str(data['app_description']).strip()
+        if 'default_currency' in data:
+            config.default_currency = str(data['default_currency']).strip()
+        if 'timezone_pref' in data:
+            config.timezone_pref = str(data['timezone_pref']).strip()
+        if 'date_format' in data:
+            config.date_format = str(data['date_format']).strip()
+        if 'theme_mode' in data:
+            config.theme_mode = str(data['theme_mode']).strip()
+        if 'advisor_assignment_mode' in data:
+            config.advisor_assignment_mode = str(data['advisor_assignment_mode']).strip()
+        if 'allow_customer_registration' in data:
+            config.allow_customer_registration = bool(data['allow_customer_registration'])
+        if 'maintenance_mode' in data:
+            config.maintenance_mode = bool(data['maintenance_mode'])
+        if 'email_alerts_enabled' in data:
+            config.email_alerts_enabled = bool(data['email_alerts_enabled'])
+        if 'security_audit_logging' in data:
+            config.security_audit_logging = bool(data['security_audit_logging'])
+
+        config.updated_by = request.user
+        config.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            user=request.user,
+            action='SYSTEM_SETTINGS_UPDATED',
+            ip_address=get_client_ip(request),
+            details={
+                'module': 'System Settings',
+                'description': 'Admin updated system configuration and platform preferences.',
+                'changed_fields': list(data.keys())
+            }
+        )
+
+        return Response({
+            'success': True,
+            'message': 'System settings saved successfully.',
+            'data': {
+                'app_name': config.app_name,
+                'app_description': config.app_description,
+                'default_currency': config.default_currency,
+                'timezone_pref': config.timezone_pref,
+                'date_format': config.date_format,
+                'theme_mode': config.theme_mode,
+                'advisor_assignment_mode': config.advisor_assignment_mode,
+                'allow_customer_registration': config.allow_customer_registration,
+                'maintenance_mode': config.maintenance_mode,
+                'email_alerts_enabled': config.email_alerts_enabled,
+                'security_audit_logging': config.security_audit_logging,
+                'updated_at': config.updated_at,
+                'updated_by': config.updated_by.email if config.updated_by else 'System Administrator',
+            }
         })
 

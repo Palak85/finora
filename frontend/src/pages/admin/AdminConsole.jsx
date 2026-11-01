@@ -27,24 +27,6 @@ export const AdminConsole = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
-
-  // Admin System Settings State (Persisted in localStorage for Administrator)
-  const [systemSettings, setSystemSettings] = useState(() => {
-    const saved = localStorage.getItem('finora_admin_settings')
-    return saved
-      ? JSON.parse(saved)
-      : {
-          platformName: 'FINORA Private Wealth Suite',
-          defaultCurrency: 'INR (₹)',
-          dateFormat: 'DD/MM/YYYY',
-          sessionTimeout: '60 minutes',
-          twoFactorEnforced: true,
-          auditLoggingLevel: 'Verbose (All Events)',
-          systemMaintenanceMode: false,
-        }
-  })
-  const [settingsSavedMessage, setSettingsSavedMessage] = useState(false)
 
   const fetchStats = async () => {
     try {
@@ -65,18 +47,8 @@ export const AdminConsole = () => {
     fetchStats()
   }, [])
 
-  const handleSaveSettings = (e) => {
-    e.preventDefault()
-    localStorage.setItem('finora_admin_settings', JSON.stringify(systemSettings))
-    setSettingsSavedMessage(true)
-    setTimeout(() => {
-      setSettingsSavedMessage(false)
-      setSettingsModalOpen(false)
-    }, 1500)
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 select-none">
       {/* Admin Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#2B2A24] pb-5">
         <div>
@@ -101,7 +73,7 @@ export const AdminConsole = () => {
           <button
             onClick={fetchStats}
             disabled={refreshing}
-            className="px-3.5 py-2 bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37] text-xs font-semibold text-[#F5F1E6] rounded-xl flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-2 bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37] text-xs font-semibold text-[#F5F1E6] rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
             title="Refresh statistics"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[#D4AF37] ${refreshing ? 'animate-spin' : ''}`} />
@@ -109,8 +81,8 @@ export const AdminConsole = () => {
           </button>
 
           <button
-            onClick={() => setSettingsModalOpen(true)}
-            className="px-3.5 py-2 bg-[#D4AF37] hover:brightness-110 text-xs font-bold text-[#0B0B0A] rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-[#D4AF37]/10"
+            onClick={() => navigate('/admin/settings')}
+            className="px-3.5 py-2 bg-[#D4AF37] hover:brightness-110 text-xs font-bold text-[#0B0B0A] rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-[#D4AF37]/10 cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5" />
             Admin Settings
@@ -266,7 +238,7 @@ export const AdminConsole = () => {
               <div className="pt-2">
                 <button
                   onClick={() => navigate('/admin/users')}
-                  className="w-full py-2 px-3 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] rounded-xl text-xs font-semibold text-[#D4AF37] flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2 px-3 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] rounded-xl text-xs font-semibold text-[#D4AF37] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   Manage Users Directory <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -314,8 +286,6 @@ export const AdminConsole = () => {
                 Double-entry ledger verification active
               </div>
             </div>
-
-
           </div>
 
           {/* 3. RECENT ACTIVITY & SECURITY ALERTS */}
@@ -331,7 +301,7 @@ export const AdminConsole = () => {
                 </div>
                 <button
                   onClick={() => navigate('/admin/audit-logs')}
-                  className="text-xs font-bold text-[#D4AF37] hover:underline flex items-center gap-1"
+                  className="text-xs font-bold text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   Full Trail <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -414,135 +384,8 @@ export const AdminConsole = () => {
           </div>
         </>
       )}
-
-      {/* 4. ADMIN SETTINGS MODAL */}
-      {settingsModalOpen && (
-        <div className="fixed inset-0 bg-[#0B0B0A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-[#2B2A24] pb-4">
-              <div>
-                <h3 className="text-lg font-bold text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-[#D4AF37]" /> Administrator System Settings
-                </h3>
-                <p className="text-xs text-[#A9A59A]">Platform-wide operational preferences and security policies</p>
-              </div>
-              <button
-                onClick={() => setSettingsModalOpen(false)}
-                className="p-1.5 rounded-full bg-[#0B0B0A] text-[#A9A59A] hover:text-[#F5F1E6]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {settingsSavedMessage && (
-              <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Settings updated and persisted successfully!
-              </div>
-            )}
-
-            <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-[#A9A59A] font-semibold mb-1">Application Branding</label>
-                <input
-                  type="text"
-                  value={systemSettings.platformName}
-                  onChange={(e) => setSystemSettings({ ...systemSettings, platformName: e.target.value })}
-                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] focus:border-[#D4AF37] outline-none"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#A9A59A] font-semibold mb-1">Currency Preference</label>
-                  <select
-                    value={systemSettings.defaultCurrency}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, defaultCurrency: e.target.value })}
-                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] focus:border-[#D4AF37] outline-none"
-                  >
-                    <option value="INR (₹)">INR (₹) - Indian Rupee</option>
-                    <option value="USD ($)">USD ($) - US Dollar</option>
-                    <option value="EUR (€)">EUR (€) - Euro</option>
-                    <option value="GBP (£)">GBP (£) - British Pound</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[#A9A59A] font-semibold mb-1">Date Format</label>
-                  <select
-                    value={systemSettings.dateFormat}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, dateFormat: e.target.value })}
-                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] focus:border-[#D4AF37] outline-none"
-                  >
-                    <option value="DD/MM/YYYY">DD/MM/YYYY (Standard)</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#A9A59A] font-semibold mb-1">Session Inactivity Timeout</label>
-                  <select
-                    value={systemSettings.sessionTimeout}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, sessionTimeout: e.target.value })}
-                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] focus:border-[#D4AF37] outline-none"
-                  >
-                    <option value="30 minutes">30 minutes</option>
-                    <option value="60 minutes">60 minutes</option>
-                    <option value="120 minutes">120 minutes</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[#A9A59A] font-semibold mb-1">Audit Logging Level</label>
-                  <select
-                    value={systemSettings.auditLoggingLevel}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, auditLoggingLevel: e.target.value })}
-                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] rounded-xl px-3 py-2 text-[#F5F1E6] focus:border-[#D4AF37] outline-none"
-                  >
-                    <option value="Verbose (All Events)">Verbose (All Events)</option>
-                    <option value="Standard">Standard (Security + Admin)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="p-3 bg-[#0B0B0A] border border-[#2B2A24] rounded-xl space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={systemSettings.twoFactorEnforced}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, twoFactorEnforced: e.target.checked })}
-                    className="accent-[#D4AF37] w-4 h-4 rounded"
-                  />
-                  <span className="text-[#F5F1E6] font-semibold">Enforce Multi-Factor Authentication (2FA)</span>
-                </label>
-                <p className="text-[11px] text-[#A9A59A] pl-6">
-                  Requires TOTP/SMS verification for administrative actions and large transfers.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2B2A24]">
-                <button
-                  type="button"
-                  onClick={() => setSettingsModalOpen(false)}
-                  className="px-4 py-2 bg-[#0B0B0A] border border-[#2B2A24] rounded-xl text-[#A9A59A] hover:text-[#F5F1E6]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#D4AF37] text-[#0B0B0A] font-bold rounded-xl hover:brightness-110 shadow-md shadow-[#D4AF37]/20"
-                >
-                  Save Configuration
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
+export default AdminConsole

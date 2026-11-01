@@ -23,7 +23,11 @@ import { MyAdvisor } from '../pages/MyAdvisor'
 import { AdvisorDashboard } from '../pages/AdvisorDashboard'
 import { AdminConsole } from '../pages/admin/AdminConsole'
 import { UserManagement } from '../pages/admin/UserManagement'
+import { AdvisorManagement } from '../pages/admin/AdvisorManagement'
+import { CustomerManagement } from '../pages/admin/CustomerManagement'
+import { SecurityAccessControl } from '../pages/admin/SecurityAccessControl'
 import { AuditLogs } from '../pages/admin/AuditLogs'
+import { SystemSettings } from '../pages/admin/SystemSettings'
 import { NotFound } from '../pages/NotFound'
 
 import { AdvisorTransactionsDashboard } from '../pages/AdvisorTransactionsDashboard'
@@ -176,10 +180,74 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="/admin/advisors"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <AdvisorManagement />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/advisor-management"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <AdvisorManagement />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/customers"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <CustomerManagement />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/customer-management"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <CustomerManagement />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/security"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <SecurityAccessControl />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/security-access"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <SecurityAccessControl />
+            </RoleRoute>
+          }
+        />
+        <Route
           path="/admin/audit-logs"
           element={
             <RoleRoute allowedRoles={['ADMINISTRATOR']}>
               <AuditLogs />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <SystemSettings />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/system-settings"
+          element={
+            <RoleRoute allowedRoles={['ADMINISTRATOR']}>
+              <SystemSettings />
             </RoleRoute>
           }
         />

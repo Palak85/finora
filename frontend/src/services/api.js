@@ -89,12 +89,31 @@ export const advisorService = {
 }
 
 export const adminService = {
-  getStats: () => api.get('/users/admin-stats/'),
+  getStats: () => api.get('/admin/stats/'),
   getUsers: () => api.get('/users/'),
   createUser: (data) => api.post('/users/', data),
   updateUser: (id, data) => api.patch(`/users/${id}/`, data),
   deleteUser: (id) => api.delete(`/users/${id}/`),
   getAuditLogs: (params) => api.get('/audit/', { params }),
+  
+  // Advisor Management
+  getAdvisors: () => api.get('/admin/advisors/'),
+  getAdvisorDetail: (id) => api.get(`/admin/advisors/${id}/`),
+  updateAdvisor: (id, data) => api.patch(`/admin/advisors/${id}/`, data),
+  toggleAdvisorStatus: (id) => api.post(`/admin/advisors/${id}/toggle-status/`),
+  
+  // Customer Management
+  getCustomers: () => api.get('/admin/customers/'),
+  getCustomerDetail: (id) => api.get(`/admin/customers/${id}/`),
+  updateCustomer: (id, data) => api.patch(`/admin/customers/${id}/`, data),
+  toggleCustomerStatus: (id) => api.post(`/admin/customers/${id}/toggle-status/`),
+  
+  // Security & Access Control
+  getSecurityOverview: () => api.get('/admin/security/'),
+  
+  // System Settings
+  getSystemSettings: () => api.get('/admin/settings/'),
+  updateSystemSettings: (data) => api.patch('/admin/settings/', data),
 }
 
 export const accountService = {
