@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { FileText, Download, FileSpreadsheet, FileCode } from 'lucide-react'
+import { FileText, Download, FileSpreadsheet, FileCode, Loader2 } from 'lucide-react'
 import { reportService } from '../services/api'
 
 export const Reports = () => {
   const [summary, setSummary] = useState(null)
   const [selectedReport, setSelectedReport] = useState('monthly_financial')
+  const [downloadingFormat, setDownloadingFormat] = useState(null)
 
   useEffect(() => {
     reportService.getSummary()
@@ -19,6 +20,50 @@ export const Reports = () => {
     { id: 'investment', name: 'Investment Portfolio Tax & Return Report' },
     { id: 'net_worth', name: 'Net Worth Statement' },
   ]
+
+  const handleDownload = async (format) => {
+    setDownloadingFormat(format)
+    const ext = format === 'excel' ? 'xlsx' : format
+    const filename = `finora_${selectedReport}_report.${ext}`
+
+    try {
+      const response = await reportService.downloadReport(format, selectedReport)
+      
+      const mimeTypes = {
+        pdf: 'application/pdf',
+        excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        csv: 'text/csv'
+      }
+      
+      const blob = new Blob([response.data], { type: mimeTypes[format] || 'application/octet-stream' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+    } catch (err) {
+      console.warn('Axios blob download failed, falling back to direct authenticated URL download...', err)
+      // Fallback: direct authenticated window navigation / anchor using token query param
+      try {
+        const directUrl = reportService.getDownloadUrl(format, selectedReport)
+        const fallbackLink = document.createElement('a')
+        fallbackLink.href = directUrl
+        fallbackLink.setAttribute('download', filename)
+        fallbackLink.target = '_blank'
+        document.body.appendChild(fallbackLink)
+        fallbackLink.click()
+        fallbackLink.parentNode.removeChild(fallbackLink)
+      } catch (fallbackErr) {
+        console.error('All download methods failed:', fallbackErr)
+        alert('Could not download file. Please check that your server session is active.')
+      }
+    } finally {
+      setDownloadingFormat(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -62,32 +107,47 @@ export const Reports = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-[#2B2A24]">
-            <a
-              href={reportService.exportPDFUrl(selectedReport)}
-              download
-              className="flex flex-col items-center justify-center p-4 bg-[#0B0B0A] border border-[#2B2A24] hover:border-[#D4AF37] rounded-2xl text-center text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all gap-2"
+            <button
+              type="button"
+              disabled={downloadingFormat !== null}
+              onClick={() => handleDownload('pdf')}
+              className="flex flex-col items-center justify-center p-4 bg-[#0B0B0A] border border-[#2B2A24] hover:border-[#D4AF37] disabled:opacity-50 rounded-2xl text-center text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all gap-2"
             >
-              <FileText className="w-6 h-6 text-red-400" />
-              <span>Download PDF</span>
-            </a>
+              {downloadingFormat === 'pdf' ? (
+                <Loader2 className="w-6 h-6 text-red-400 animate-spin" />
+              ) : (
+                <FileText className="w-6 h-6 text-red-400" />
+              )}
+              <span>{downloadingFormat === 'pdf' ? 'Generating...' : 'Download PDF'}</span>
+            </button>
 
-            <a
-              href={reportService.exportExcelUrl(selectedReport)}
-              download
-              className="flex flex-col items-center justify-center p-4 bg-[#0B0B0A] border border-[#2B2A24] hover:border-[#D4AF37] rounded-2xl text-center text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all gap-2"
+            <button
+              type="button"
+              disabled={downloadingFormat !== null}
+              onClick={() => handleDownload('excel')}
+              className="flex flex-col items-center justify-center p-4 bg-[#0B0B0A] border border-[#2B2A24] hover:border-[#D4AF37] disabled:opacity-50 rounded-2xl text-center text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all gap-2"
             >
-              <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
-              <span>Download Excel (.xlsx)</span>
-            </a>
+              {downloadingFormat === 'excel' ? (
+                <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+              )}
+              <span>{downloadingFormat === 'excel' ? 'Exporting...' : 'Download Excel (.xlsx)'}</span>
+            </button>
 
-            <a
-              href={reportService.exportCSVUrl(selectedReport)}
-              download
-              className="flex flex-col items-center justify-center p-4 bg-[#0B0B0A] border border-[#2B2A24] hover:border-[#D4AF37] rounded-2xl text-center text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all gap-2"
+            <button
+              type="button"
+              disabled={downloadingFormat !== null}
+              onClick={() => handleDownload('csv')}
+              className="flex flex-col items-center justify-center p-4 bg-[#0B0B0A] border border-[#2B2A24] hover:border-[#D4AF37] disabled:opacity-50 rounded-2xl text-center text-xs font-bold text-[#F5F1E6] hover:text-[#D4AF37] transition-all gap-2"
             >
-              <FileCode className="w-6 h-6 text-[#D4AF37]" />
-              <span>Download CSV</span>
-            </a>
+              {downloadingFormat === 'csv' ? (
+                <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
+              ) : (
+                <FileCode className="w-6 h-6 text-[#D4AF37]" />
+              )}
+              <span>{downloadingFormat === 'csv' ? 'Exporting...' : 'Download CSV'}</span>
+            </button>
           </div>
         </div>
       </div>

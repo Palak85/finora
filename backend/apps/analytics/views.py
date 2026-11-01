@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
+from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from datetime import datetime, timedelta
@@ -9,6 +10,8 @@ from apps.transactions.models import Transaction
 from apps.budgets.models import Budget
 from apps.investments.models import Investment
 from apps.accounts.models import Account
+
+User = get_user_model()
 
 class AnalyticsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -42,8 +45,20 @@ class AnalyticsView(APIView):
             except ValueError:
                 pass
 
+        # Determine user scope: if admin without specific target_user_id, aggregate all non-admins
+        target_user_id = request.query_params.get('user_id')
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
+            if target_user_id:
+                users_scope = User.objects.filter(id=target_user_id)
+            else:
+                users_scope = User.objects.exclude(role='ADMINISTRATOR')
+        elif user.role == 'FINANCIAL_ADVISOR' and target_user_id:
+            users_scope = User.objects.filter(id=target_user_id)
+        else:
+            users_scope = User.objects.filter(id=user.id)
+
         txns = Transaction.objects.filter(
-            user=user,
+            user__in=users_scope,
             transaction_date__gte=start_date,
             transaction_date__lte=end_date
         )
@@ -81,24 +96,23 @@ class AnalyticsView(APIView):
         for cat in cat_qs:
             category_spending.append({
                 'category': cat['category'],
-                'amount': str(cat['total']),
+                'amount': float(cat['total']),
                 'percentage': round(float((cat['total'] / total_expense_period) * 100), 1)
             })
 
         # 3. Investment Growth & Asset Allocation
-        investments = Investment.objects.filter(user=user)
+        investments = Investment.objects.filter(user__in=users_scope)
         inv_total_invested = investments.aggregate(total=Sum('invested_amount'))['total'] or Decimal('0.00')
         inv_current_value = investments.aggregate(total=Sum('current_value'))['total'] or Decimal('0.00')
 
-        # 4. Net Worth Trend simulation over last 6 months
+        # 4. Net Worth Trend
+        cur_cash = Account.objects.filter(user__in=users_scope, status='Active').aggregate(sum=Sum('balance'))['sum'] or Decimal('0.00')
         net_worth_trend = []
-        cur_cash = Account.objects.filter(user=user, status='Active').aggregate(sum=Sum('balance'))['sum'] or Decimal('0.00')
         
         # Build 6 monthly data points
         for i in range(5, -1, -1):
             dt = now - timedelta(days=i * 30)
             m_label = dt.strftime('%b %Y')
-            # Simulated projection factor based on current net worth
             estimated_nw = cur_cash + inv_current_value - Decimal(str(i * 12000))
             net_worth_trend.append({
                 'month': m_label,

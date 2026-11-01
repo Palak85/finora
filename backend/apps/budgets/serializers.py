@@ -10,16 +10,24 @@ class BudgetSerializer(serializers.ModelSerializer):
     usage_percentage = serializers.SerializerMethodField()
     overspending_amount = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
 
     class Meta:
         model = Budget
         fields = (
-            'id', 'user', 'category', 'monthly_limit',
+            'id', 'user', 'user_full_name', 'user_email', 'category', 'monthly_limit',
             'spent_amount', 'remaining_amount', 'usage_percentage',
             'overspending_amount', 'status', 'month', 'year',
             'created_at', 'updated_at'
         )
-        read_only_fields = ('id', 'user', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user', 'user_full_name', 'user_email', 'created_at', 'updated_at')
+
+    def get_user_full_name(self, obj):
+        return obj.user.full_name if obj.user else None
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
 
     def _get_actual_spent(self, obj):
         # Calculate actual spent sum from user transactions matching category, month, year

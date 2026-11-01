@@ -25,6 +25,29 @@ import { dashboardService, analyticsService } from '../services/api'
 import { useNotification } from '../context/NotificationContext'
 import { formatCurrency, formatDate, maskAccountNumber } from '../utils/formatters'
 
+const CategoryTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const item = payload[0]
+    return (
+      <div className="bg-[#171714] border border-[#D4AF37] px-3.5 py-2 rounded-xl shadow-2xl text-xs z-50 pointer-events-none">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.payload?.fill || '#D4AF37' }} />
+          <span className="font-bold text-[#F5F1E6]">{item.name}</span>
+        </div>
+        <p className="text-sm font-extrabold text-[#D4AF37] font-['Space_Grotesk']">
+          {formatCurrency(item.value)}
+        </p>
+        {item.payload?.percentage !== undefined && (
+          <p className="text-[10px] text-[#A9A59A] mt-0.5 font-medium">
+            {item.payload.percentage}% of spending
+          </p>
+        )}
+      </div>
+    )
+  }
+  return null
+}
+
 export const Dashboard = () => {
   const { refreshKey } = useOutletContext() || { refreshKey: 0 }
   const { notifications, unreadCount, markAsRead } = useNotification()
@@ -76,7 +99,10 @@ export const Dashboard = () => {
     accounts = [],
     recent_transactions = [],
     investment_summary = {},
-    goals = []
+    goals = [],
+    is_admin_overview = false,
+    total_users = 0,
+    total_accounts = 0,
   } = data || {}
 
   // Chart Color System
@@ -228,7 +254,10 @@ export const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={analytics?.category_spending || []}
+                    data={(analytics?.category_spending || []).map(item => ({
+                      ...item,
+                      amount: Number(item.amount) || 0
+                    }))}
                     dataKey="amount"
                     nameKey="category"
                     cx="50%"
@@ -241,7 +270,7 @@ export const Dashboard = () => {
                       <Cell key={`cell-${index}`} fill={GOLD_PALETTE[index % GOLD_PALETTE.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#0B0B0A', borderColor: '#2B2A24', borderRadius: '12px', fontSize: '12px' }} />
+                  <Tooltip content={<CategoryTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

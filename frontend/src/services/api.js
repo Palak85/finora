@@ -128,6 +128,15 @@ export const analyticsService = {
 
 export const reportService = {
   getSummary: () => api.get('/reports/summary/'),
+  downloadReport: (format, type) => {
+    return api.get(`/reports/export/${format}/?type=${type}`, {
+      responseType: 'blob',
+    })
+  },
+  getDownloadUrl: (format, type) => {
+    const token = localStorage.getItem('access_token') || ''
+    return `${API_BASE_URL}/reports/export/${format}/?type=${type}&token=${encodeURIComponent(token)}`
+  },
   exportCSVUrl: (type) => `${API_BASE_URL}/reports/export/csv/?type=${type}`,
   exportExcelUrl: (type) => `${API_BASE_URL}/reports/export/excel/?type=${type}`,
   exportPDFUrl: (type) => `${API_BASE_URL}/reports/export/pdf/?type=${type}`,

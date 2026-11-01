@@ -16,8 +16,8 @@ class InvestmentListCreateView(generics.ListCreateAPIView):
         if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
-                return Investment.objects.filter(user_id=user_id)
-            return Investment.objects.all()
+                return Investment.objects.filter(user_id=user_id).select_related('user')
+            return Investment.objects.exclude(user__role='ADMINISTRATOR').select_related('user')
         return Investment.objects.filter(user=user)
 
     def list(self, request, *args, **kwargs):
@@ -51,7 +51,7 @@ class InvestmentDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
-            return Investment.objects.all()
+            return Investment.objects.all().select_related('user')
         return Investment.objects.filter(user=user)
 
     def update(self, request, *args, **kwargs):
@@ -88,7 +88,7 @@ class PortfolioSummaryView(APIView):
             if user_id:
                 investments = Investment.objects.filter(user_id=user_id)
             else:
-                investments = Investment.objects.filter(user=user)
+                investments = Investment.objects.exclude(user__role='ADMINISTRATOR')
         else:
             investments = Investment.objects.filter(user=user)
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { PieChart, Plus, AlertTriangle, ShieldCheck, AlertCircle, Trash2, X, CheckCircle2 } from 'lucide-react'
-import { budgetService } from '../services/api'
+import { PieChart, Plus, AlertTriangle, ShieldCheck, AlertCircle, Trash2, X, CheckCircle2, Users } from 'lucide-react'
+import { budgetService, authService } from '../services/api'
 import { formatCurrency } from '../utils/formatters'
+import { useAuth } from '../context/AuthContext'
 
 export const Budgets = () => {
+  const { isAdmin } = useAuth()
   const [budgets, setBudgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -12,10 +14,16 @@ export const Budgets = () => {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
+  // Admin: list of all users for filtering
+  const [allUsers, setAllUsers] = useState([])
+  const [selectedUserId, setSelectedUserId] = useState('')
+
   const fetchBudgets = async () => {
     setLoading(true)
     try {
-      const res = await budgetService.getBudgets()
+      const params = {}
+      if (isAdmin && selectedUserId) params.user_id = selectedUserId
+      const res = await budgetService.getBudgets(params)
       if (res.data?.success) {
         setBudgets(res.data.data)
       }
@@ -26,9 +34,22 @@ export const Budgets = () => {
     }
   }
 
+  const fetchUsers = async () => {
+    try {
+      const res = await authService.getUsers()
+      if (res.data?.success) setAllUsers(res.data.data)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin) fetchUsers()
+  }, [isAdmin])
+
   useEffect(() => {
     fetchBudgets()
-  }, [])
+  }, [selectedUserId])
 
   const handleCreateBudget = async (e) => {
     e.preventDefault()
@@ -69,15 +90,47 @@ export const Budgets = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#2B2A24] pb-5">
         <div>
           <h1 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">Monthly Budget Allocations</h1>
-          <p className="text-xs text-[#A9A59A] mt-1">Real-time category spending limits & threshold alerts</p>
+          <p className="text-xs text-[#A9A59A] mt-1">Real-time category spending limits &amp; threshold alerts</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" /> Create Category Budget
-        </button>
+        {!isAdmin && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Create Category Budget
+          </button>
+        )}
       </div>
+
+      {/* Admin: User Filter */}
+      {isAdmin && (
+        <div className="p-4 bg-[#171714] border border-[#2B2A24] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#D4AF37]">
+            <Users className="w-4 h-4" />
+            <span>Viewing budgets for:</span>
+          </div>
+          <select
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            className="bg-[#0B0B0A] border border-[#2B2A24] text-xs text-[#F5F1E6] font-medium rounded-xl px-3 py-2 focus:border-[#D4AF37] focus:outline-none min-w-[220px]"
+          >
+            <option value="">All Users ({budgets.length} budgets)</option>
+            {allUsers.filter((u) => u.role !== 'ADMINISTRATOR').map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.full_name} — {u.email}
+              </option>
+            ))}
+          </select>
+          {selectedUserId && (
+            <button
+              onClick={() => setSelectedUserId('')}
+              className="text-xs text-[#A9A59A] hover:text-[#F5F1E6] underline"
+            >
+              Clear filter
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Budget Cards Grid */}
       {loading ? (
@@ -85,6 +138,26 @@ export const Budgets = () => {
           {[1, 2, 3].map(i => (
             <div key={i} className="h-44 bg-[#171714] border border-[#2B2A24] rounded-3xl" />
           ))}
+        </div>
+      ) : budgets.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <PieChart className="w-12 h-12 text-[#2B2A24] mb-4" />
+          <p className="text-sm font-semibold text-[#F5F1E6]">No budgets found</p>
+          <p className="text-xs text-[#A9A59A] mt-1">
+            {isAdmin
+              ? selectedUserId
+                ? 'This user has no budgets set for the current month.'
+                : 'No budgets exist across any users yet.'
+              : 'Create your first category budget to start tracking spending.'}
+          </p>
+          {!isAdmin && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="mt-5 flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl hover:brightness-110 transition-all"
+            >
+              <Plus className="w-4 h-4" /> Create Category Budget
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -103,7 +176,12 @@ export const Budgets = () => {
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-bold text-[#F5F1E6]">{b.category}</span>
+                  <div>
+                    <span className="text-sm font-bold text-[#F5F1E6]">{b.category}</span>
+                    {isAdmin && b.user_full_name && (
+                      <p className="text-[10px] text-[#A9A59A] mt-0.5">{b.user_full_name}</p>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border ${
                       isExceeded
@@ -114,12 +192,14 @@ export const Budgets = () => {
                     }`}>
                       {b.status}
                     </span>
-                    <button
-                      onClick={() => handleDelete(b.id)}
-                      className="p-1 text-[#A9A59A] hover:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {!isAdmin && (
+                      <button
+                        onClick={() => handleDelete(b.id)}
+                        className="p-1 text-[#A9A59A] hover:text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -151,8 +231,8 @@ export const Budgets = () => {
         </div>
       )}
 
-      {/* Create Budget Modal */}
-      {isModalOpen && (
+      {/* Create Budget Modal — only for non-admin users */}
+      {isModalOpen && !isAdmin && (
         <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#2B2A24]">
@@ -182,10 +262,10 @@ export const Budgets = () => {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
                 >
-                  <option value="Food">Food & Dining</option>
-                  <option value="Transport">Transport & Fuel</option>
+                  <option value="Food">Food &amp; Dining</option>
+                  <option value="Transport">Transport &amp; Fuel</option>
                   <option value="Shopping">Shopping</option>
-                  <option value="Utilities">Utilities & Bills</option>
+                  <option value="Utilities">Utilities &amp; Bills</option>
                   <option value="Entertainment">Entertainment</option>
                   <option value="Healthcare">Healthcare</option>
                   <option value="Education">Education</option>

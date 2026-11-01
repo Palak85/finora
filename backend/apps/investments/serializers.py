@@ -2,15 +2,18 @@ from rest_framework import serializers
 from .models import Investment
 
 class InvestmentSerializer(serializers.ModelSerializer):
+    user_full_name = serializers.ReadOnlyField(source='user.full_name')
+    user_email = serializers.ReadOnlyField(source='user.email')
+
     class Meta:
         model = Investment
         fields = (
-            'id', 'user', 'asset_name', 'asset_type',
+            'id', 'user', 'user_full_name', 'user_email', 'asset_name', 'asset_type',
             'quantity', 'average_buy_price', 'invested_amount',
             'current_value', 'profit_loss', 'profit_loss_percentage',
             'purchase_date', 'created_at', 'updated_at'
         )
-        read_only_fields = ('id', 'user', 'invested_amount', 'profit_loss', 'profit_loss_percentage', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user', 'user_full_name', 'user_email', 'invested_amount', 'profit_loss', 'profit_loss_percentage', 'created_at', 'updated_at')
 
     def validate_quantity(self, value):
         if value <= 0:

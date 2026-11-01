@@ -9,18 +9,38 @@ class BudgetListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = BudgetSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        now = datetime.now()
-        month = self.request.query_params.get('month', now.month)
-        year = self.request.query_params.get('year', now.year)
-
+    def _base_qs(self, user, month, year):
+        """Return budget queryset for the given month/year, respecting role."""
         if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
                 return Budget.objects.filter(user_id=user_id, month=month, year=year)
             return Budget.objects.filter(month=month, year=year)
         return Budget.objects.filter(user=user, month=month, year=year)
+
+    def get_queryset(self):
+        user = self.request.user
+        now = datetime.now()
+        month = int(self.request.query_params.get('month', now.month))
+        year = int(self.request.query_params.get('year', now.year))
+
+        qs = self._base_qs(user, month, year)
+
+        # If no budgets exist for the requested month and no explicit month was
+        # provided, fall back to the most recent month that has budget data.
+        explicit_month = self.request.query_params.get('month')
+        if not qs.exists() and not explicit_month:
+            if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+                user_id = self.request.query_params.get('user_id')
+                scope = Budget.objects.filter(user_id=user_id) if user_id else Budget.objects.all()
+            else:
+                scope = Budget.objects.filter(user=user)
+
+            latest = scope.order_by('-year', '-month').first()
+            if latest:
+                qs = self._base_qs(user, latest.month, latest.year)
+
+        return qs
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
