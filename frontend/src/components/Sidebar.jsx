@@ -99,7 +99,7 @@ export const Sidebar = () => {
         </div>
 
         {/* Advisor Section */}
-        {isAdvisor && (
+        {isAdvisor && !isAdmin && (
           <div>
             <p className="px-3 text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider mb-2 flex items-center gap-1">
               <UserCheck className="w-3 h-3" /> Advisor Tools

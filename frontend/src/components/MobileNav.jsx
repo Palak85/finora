@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import {
   LayoutDashboard,
   Wallet,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react'
 
 export const MobileNav = ({ onOpenQuickAdd }) => {
+  const { isAdmin } = useAuth()
   const [moreOpen, setMoreOpen] = useState(false)
 
   const mainTabs = [
@@ -77,6 +79,7 @@ export const MobileNav = ({ onOpenQuickAdd }) => {
       )}
 
       {/* Floating Gold + Action Button */}
+      {!isAdmin && (
       <div className="fixed bottom-20 right-5 z-40 lg:hidden">
         <button
           onClick={onOpenQuickAdd}
@@ -85,6 +88,7 @@ export const MobileNav = ({ onOpenQuickAdd }) => {
           <Plus className="w-7 h-7 font-extrabold stroke-[3]" />
         </button>
       </div>
+      )}
 
       {/* Fixed Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[#171714]/95 backdrop-blur-lg border-t border-[#2B2A24] px-3 py-2 z-30 lg:hidden flex items-center justify-around">

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Target, Plus, CheckCircle2, Trash2, X, Pencil, Coins, AlertCircle, Wallet } from 'lucide-react'
 import { goalService, accountService } from '../services/api'
 import { formatCurrency, formatDate } from '../utils/formatters'
+import { useAuth } from '../context/AuthContext'
 
 export const Goals = () => {
+  const { isAdmin } = useAuth()
   const [goals, setGoals] = useState([])
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -190,12 +192,18 @@ export const Goals = () => {
           <h1 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">Financial Goals</h1>
           <p className="text-xs text-[#A9A59A] mt-1">Set, track, and directly fund milestone savings targets</p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" /> Create Goal Target
-        </button>
+        {isAdmin ? (
+          <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5" /> View Only Mode (Admin)
+          </span>
+        ) : (
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Create Goal Target
+          </button>
+        )}
       </div>
 
       {goals.length === 0 ? (
@@ -205,12 +213,14 @@ export const Goals = () => {
           <p className="text-xs text-[#A9A59A] mt-1 max-w-sm">
             Create milestone savings targets such as Emergency Reserve, Vacation, or Real Estate.
           </p>
-          <button
-            onClick={handleOpenCreate}
-            className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
-          >
-            <Plus className="w-4 h-4" /> Create First Goal
-          </button>
+          {!isAdmin && (
+            <button
+              onClick={handleOpenCreate}
+              className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
+            >
+              <Plus className="w-4 h-4" /> Create First Goal
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -228,22 +238,24 @@ export const Goals = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(g)}
-                        className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
-                        title="Edit Goal"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(g.id)}
-                        className="p-1.5 rounded-lg text-[#A9A59A] hover:text-red-400 hover:bg-red-500/10 transition-all"
-                        title="Delete Goal"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {!isAdmin && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenEdit(g)}
+                          className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                          title="Edit Goal"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(g.id)}
+                          className="p-1.5 rounded-lg text-[#A9A59A] hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          title="Delete Goal"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -265,13 +277,15 @@ export const Goals = () => {
                   </div>
                 </div>
 
-                {/* Add Money Button */}
-                <button
-                  onClick={() => handleOpenContribute(g)}
-                  className="w-full mt-3 py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#D4AF37]/15 to-[#9A7B1C]/15 hover:from-[#D4AF37]/25 hover:to-[#9A7B1C]/25 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Money to Goal
-                </button>
+                {/* Add Money Button - Only for non-admin */}
+                {!isAdmin && (
+                  <button
+                    onClick={() => handleOpenContribute(g)}
+                    className="w-full mt-3 py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#D4AF37]/15 to-[#9A7B1C]/15 hover:from-[#D4AF37]/25 hover:to-[#9A7B1C]/25 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Money to Goal
+                  </button>
+                )}
               </div>
             )
           })}

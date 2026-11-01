@@ -1,5 +1,6 @@
 from rest_framework import generics
 from rest_framework.response import Response
+from django.db.models import Q
 from .models import AuditLog
 from .serializers import AuditLogSerializer
 from apps.users.permissions import IsAdminUser
@@ -12,14 +13,37 @@ class AuditLogListView(generics.ListAPIView):
     serializer_class = AuditLogSerializer
 
     def get_queryset(self):
-        return AuditLog.objects.exclude(
+        qs = AuditLog.objects.exclude(
             action__in=SYSTEM_ACTIONS
-        ).select_related('user')
+        ).select_related('user').order_by('-timestamp')
+
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                Q(action__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(user__full_name__icontains=search) |
+                Q(ip_address__icontains=search)
+            )
+
+        action = self.request.query_params.get('action', '').strip()
+        if action:
+            qs = qs.filter(action=action)
+
+        date_from = self.request.query_params.get('date_from', '').strip()
+        date_to = self.request.query_params.get('date_to', '').strip()
+        if date_from:
+            qs = qs.filter(timestamp__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(timestamp__date__lte=date_to)
+
+        return qs
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'success': True,
+            'count': queryset.count(),
             'data': serializer.data
         })

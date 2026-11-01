@@ -20,7 +20,9 @@ import { Reports } from '../pages/Reports'
 import { Notifications } from '../pages/Notifications'
 import { Settings } from '../pages/Settings'
 import { AdvisorDashboard } from '../pages/AdvisorDashboard'
-import { AdminDashboard } from '../pages/AdminDashboard'
+import { AdminConsole } from '../pages/admin/AdminConsole'
+import { UserManagement } from '../pages/admin/UserManagement'
+import { AuditLogs } from '../pages/admin/AuditLogs'
 import { NotFound } from '../pages/NotFound'
 
 import { WealthAnalyticsPage } from '../pages/WealthAnalyticsPage'
@@ -95,12 +97,12 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Admin Routes */}
+        {/* Admin Routes (Strictly Administrator Only) */}
         <Route
           path="/admin"
           element={
             <RoleRoute allowedRoles={['ADMINISTRATOR']}>
-              <AdminDashboard />
+              <AdminConsole />
             </RoleRoute>
           }
         />
@@ -108,7 +110,7 @@ export const AppRoutes = () => {
           path="/admin/users"
           element={
             <RoleRoute allowedRoles={['ADMINISTRATOR']}>
-              <AdminDashboard />
+              <UserManagement />
             </RoleRoute>
           }
         />
@@ -116,7 +118,7 @@ export const AppRoutes = () => {
           path="/admin/audit-logs"
           element={
             <RoleRoute allowedRoles={['ADMINISTRATOR']}>
-              <AdminDashboard />
+              <AuditLogs />
             </RoleRoute>
           }
         />

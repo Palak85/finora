@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useNotification } from '../context/NotificationContext'
 
 export const Header = ({ onOpenQuickAdd }) => {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { notifications, unreadCount, markAllAsRead } = useNotification()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -55,13 +55,15 @@ export const Header = ({ onOpenQuickAdd }) => {
 
       {/* Header Actions */}
       <div className="flex items-center gap-3 lg:gap-4">
-        {/* Quick Action Button */}
-        <button
-          onClick={onOpenQuickAdd}
-          className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs px-4 py-2 rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Sparkles className="w-4 h-4" /> Quick Action
-        </button>
+        {/* Quick Action Button - Hidden for Administrator (Admin cannot add transactions/accounts/goals) */}
+        {!isAdmin && (
+          <button
+            onClick={onOpenQuickAdd}
+            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs px-4 py-2 rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Sparkles className="w-4 h-4" /> Quick Action
+          </button>
+        )}
 
         {/* Theme Toggle Button (Sun/Moon) */}
         <button

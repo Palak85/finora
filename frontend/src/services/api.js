@@ -73,6 +73,15 @@ export const authService = {
   deleteUser: (id) => api.delete(`/users/${id}/`),
 }
 
+export const adminService = {
+  getStats: () => api.get('/users/admin-stats/'),
+  getUsers: () => api.get('/users/'),
+  createUser: (data) => api.post('/users/', data),
+  updateUser: (id, data) => api.patch(`/users/${id}/`, data),
+  deleteUser: (id) => api.delete(`/users/${id}/`),
+  getAuditLogs: (params) => api.get('/audit/', { params }),
+}
+
 export const accountService = {
   getAccounts: (params) => api.get('/accounts/', { params }),
   getAccount: (id) => api.get(`/accounts/${id}/`),
@@ -145,5 +154,5 @@ export const reportService = {
 }
 
 export const auditService = {
-  getAuditLogs: () => api.get('/audit/'),
+  getAuditLogs: (params) => api.get('/audit/', { params }),
 }

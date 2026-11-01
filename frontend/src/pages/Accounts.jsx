@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Wallet, Plus, CreditCard, Building2, ShieldCheck, Trash2, X, CheckCircle2 } from 'lucide-react'
 import { accountService } from '../services/api'
 import { formatCurrency } from '../utils/formatters'
+import { useAuth } from '../context/AuthContext'
 
 export const Accounts = () => {
+  const { isAdmin } = useAuth()
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -79,12 +81,18 @@ export const Accounts = () => {
           <h1 className="text-2xl font-bold text-[#F5F1E6] font-['Space_Grotesk']">My Bank Accounts</h1>
           <p className="text-xs text-[#A9A59A] mt-1">Manage linked bank accounts, credit cards & wallets</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" /> Link New Account
-        </button>
+        {isAdmin ? (
+          <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" /> View Only Accounts (Admin)
+          </span>
+        ) : (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Link New Account
+          </button>
+        )}
       </div>
 
       {/* Account Cards Grid */}

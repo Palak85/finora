@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { X, ArrowDownRight, ArrowUpRight, ArrowRightLeft, TrendingUp, CheckCircle2, AlertCircle, Wallet } from 'lucide-react'
 import { accountService, transactionService, investmentService } from '../services/api'
 import { formatCurrency } from '../utils/formatters'
+import { useAuth } from '../context/AuthContext'
 
 export const QuickAddModal = ({ isOpen, onClose, onSuccess }) => {
+  const { isAdmin } = useAuth()
   const [activeTab, setActiveTab] = useState('EXPENSE') // EXPENSE, INCOME, TRANSFER, INVESTMENT
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(false)
@@ -45,7 +47,7 @@ export const QuickAddModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || isAdmin) return null
 
   const selectedAccount = accounts.find(a => String(a.id) === String(accountId))
   const selectedToAccount = accounts.find(a => String(a.id) === String(toAccountId))

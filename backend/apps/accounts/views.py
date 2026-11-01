@@ -32,6 +32,11 @@ class AccountListCreateView(generics.ListCreateAPIView):
         })
 
     def create(self, request, *args, **kwargs):
+        if request.user.role == 'ADMINISTRATOR':
+            return Response({
+                'success': False,
+                'message': 'Security Protection: Administrators cannot add bank accounts. Accounts can only be viewed.'
+            }, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
@@ -94,6 +99,11 @@ class AccountTransferView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        if request.user.role == 'ADMINISTRATOR':
+            return Response({
+                'success': False,
+                'message': 'Security Protection: Administrators cannot initiate account transfers.'
+            }, status=status.HTTP_403_FORBIDDEN)
         from_account_id = request.data.get('from_account')
         to_account_id = request.data.get('to_account')
         amount_raw = request.data.get('amount')

@@ -26,6 +26,11 @@ class TransactionListCreateView(generics.ListCreateAPIView):
         return Transaction.objects.filter(user=user).select_related('account', 'user')
 
     def create(self, request, *args, **kwargs):
+        if request.user.role == 'ADMINISTRATOR':
+            return Response({
+                'success': False,
+                'message': 'Security Protection: Administrators cannot add transactions. Transactions can only be viewed.'
+            }, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             txn = serializer.save()

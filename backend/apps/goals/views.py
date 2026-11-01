@@ -33,6 +33,11 @@ class GoalListCreateView(generics.ListCreateAPIView):
         })
 
     def create(self, request, *args, **kwargs):
+        if request.user.role == 'ADMINISTRATOR':
+            return Response({
+                'success': False,
+                'message': 'Security Protection: Administrators cannot add goals. Goal access is read-only.'
+            }, status=status.HTTP_403_FORBIDDEN)
         account_id = request.data.get('account') or request.data.get('account_id')
         serializer = self.get_serializer(data=request.data, context={'request': request})
         if serializer.is_valid():
@@ -131,6 +136,11 @@ class GoalContributeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, id):
+        if request.user.role == 'ADMINISTRATOR':
+            return Response({
+                'success': False,
+                'message': 'Security Protection: Administrators cannot contribute to goals.'
+            }, status=status.HTTP_403_FORBIDDEN)
         try:
             goal = Goal.objects.get(id=id, user=request.user)
         except Goal.DoesNotExist:
