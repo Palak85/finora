@@ -12,6 +12,7 @@ class Notification(models.Model):
         ('Transaction', 'Transaction'),
         ('Account', 'Account'),
         ('Goal', 'Goal'),
+        ('Advisor', 'Advisor'),
     )
 
     user = models.ForeignKey(

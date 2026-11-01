@@ -118,6 +118,7 @@ export const notificationService = {
   markAsRead: (id) => api.patch(`/notifications/${id}/read/`),
   markAllAsRead: () => api.post('/notifications/read-all/'),
   deleteNotification: (id) => api.delete(`/notifications/${id}/`),
+  sendAdvisorRecommendation: (data) => api.post('/notifications/send-advice/', data),
 }
 
 export const dashboardService = {

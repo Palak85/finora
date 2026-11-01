@@ -65,3 +65,58 @@ class NotificationDeleteView(generics.DestroyAPIView):
             'success': True,
             'message': 'Notification deleted.'
         })
+
+
+from apps.audit.models import AuditLog
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class SendAdvisorRecommendationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        advisor = request.user
+        if advisor.role not in ['FINANCIAL_ADVISOR', 'ADMINISTRATOR'] and not advisor.is_superuser:
+            return Response({
+                'success': False,
+                'message': 'Only financial advisors and administrators can issue recommendations.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        user_id = request.data.get('user_id')
+        title = request.data.get('title', 'Advisor Strategic Recommendation')
+        message = (request.data.get('message') or '').strip()
+        notification_type = request.data.get('notification_type', 'Advisor')
+
+        if not user_id or not message:
+            return Response({
+                'success': False,
+                'message': 'Client ID and recommendation message are required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Target client not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        notification = Notification.objects.create(
+            user=target_user,
+            title=title,
+            message=message,
+            notification_type=notification_type
+        )
+
+        AuditLog.objects.create(
+            user=advisor,
+            action='ADVISOR_RECOMMENDATION',
+            details=f"Advisor {advisor.full_name} issued guidance to {target_user.full_name}: {title}"
+        )
+
+        return Response({
+            'success': True,
+            'message': f'Strategic recommendation dispatched to {target_user.full_name} successfully!',
+            'data': NotificationSerializer(notification).data
+        }, status=status.HTTP_201_CREATED)

@@ -6,17 +6,19 @@ from apps.accounts.serializers import AccountSerializer
 class TransactionSerializer(serializers.ModelSerializer):
     account_detail = AccountSerializer(source='account', read_only=True)
     account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
+    user_full_name = serializers.CharField(source='user.full_name', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
 
     class Meta:
         model = Transaction
         fields = (
-            'id', 'user', 'account', 'account_detail',
+            'id', 'user', 'user_full_name', 'user_email', 'account', 'account_detail',
             'transaction_type', 'amount', 'category',
             'description', 'payment_method', 'transaction_date',
             'notes', 'reference_id', 'is_recurring',
             'created_at', 'updated_at'
         )
-        read_only_fields = ('id', 'user', 'reference_id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user', 'user_full_name', 'user_email', 'reference_id', 'created_at', 'updated_at')
 
     def validate_amount(self, value):
         if value <= 0:

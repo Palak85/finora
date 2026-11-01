@@ -1,13 +1,20 @@
 {
-  "python.defaultInterpreterPath": "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe",
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+  "pyrefly.pythonInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/backend"
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/apps"
   ],
   "python.autoComplete.extraPaths": [
-    "${workspaceFolder}/backend"
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/apps"
   ],
   "pyrefly.searchPath": [
-    "${workspaceFolder}/backend"
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/apps"
   ],
-  "pyrefly.pythonInterpreterPath": "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe"
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingTypeStubs": "none",
+    "reportIncompatibleVariableOverride": "none"
+  }
 }

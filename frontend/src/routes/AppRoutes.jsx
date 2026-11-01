@@ -25,6 +25,8 @@ import { NotFound } from '../pages/NotFound'
 
 import { WealthAnalyticsPage } from '../pages/WealthAnalyticsPage'
 import { AdvisorSuitePage } from '../pages/AdvisorSuitePage'
+import { AdvisorTransactionsDashboard } from '../pages/AdvisorTransactionsDashboard'
+import { AdvisorBudgetsDashboard } from '../pages/AdvisorBudgetsDashboard'
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -40,6 +42,37 @@ const RoleRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/dashboard" replace />
   }
   return children
+}
+
+// Role-based root dashboard router: directs each user to their role-specific dashboard
+const RoleBasedDashboard = () => {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user?.role === 'FINANCIAL_ADVISOR') {
+    return <Navigate to="/advisor" replace />
+  }
+  if (user?.role === 'ADMINISTRATOR') {
+    return <Navigate to="/admin" replace />
+  }
+  return <Dashboard />
+}
+
+// Role-based Transactions: Directs Advisor to Advisor Transaction Tracker
+const RoleBasedTransactions = () => {
+  const { isAdvisor } = useAuth()
+  if (isAdvisor) {
+    return <AdvisorTransactionsDashboard />
+  }
+  return <Transactions />
+}
+
+// Role-based Budgets: Directs Advisor to Advisor Budget Tracker
+const RoleBasedBudgets = () => {
+  const { isAdvisor } = useAuth()
+  if (isAdvisor) {
+    return <AdvisorBudgetsDashboard />
+  }
+  return <Budgets />
 }
 
 export const AppRoutes = () => {
@@ -65,10 +98,10 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<RoleBasedDashboard />} />
         <Route path="/accounts" element={<Accounts />} />
-        <Route path="/transactions" element={<Transactions />} />
-        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/transactions" element={<RoleBasedTransactions />} />
+        <Route path="/budgets" element={<RoleBasedBudgets />} />
         <Route path="/investments" element={<Investments />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/analytics" element={<Analytics />} />
@@ -91,6 +124,22 @@ export const AppRoutes = () => {
           element={
             <RoleRoute allowedRoles={['FINANCIAL_ADVISOR', 'ADMINISTRATOR']}>
               <AdvisorDashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/advisor/transactions"
+          element={
+            <RoleRoute allowedRoles={['FINANCIAL_ADVISOR', 'ADMINISTRATOR']}>
+              <AdvisorTransactionsDashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/advisor/budgets"
+          element={
+            <RoleRoute allowedRoles={['FINANCIAL_ADVISOR', 'ADMINISTRATOR']}>
+              <AdvisorBudgetsDashboard />
             </RoleRoute>
           }
         />
@@ -120,10 +169,10 @@ export const AppRoutes = () => {
             </RoleRoute>
           }
         />
-
-        {/* 404 Catch All */}
-        <Route path="*" element={<NotFound />} />
       </Route>
+
+      {/* Fallback 404 Route */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
