@@ -13,9 +13,11 @@ import {
   ChevronRight,
   Pencil,
   X,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle,
+  Wallet
 } from 'lucide-react'
-import { transactionService, reportService } from '../services/api'
+import { transactionService, reportService, accountService } from '../services/api'
 import { formatCurrency, formatDate } from '../utils/formatters'
 
 export const Transactions = () => {
@@ -26,6 +28,22 @@ export const Transactions = () => {
   const [typeFilter, setTypeFilter] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+
+  // Accounts list for expense funding
+  const [accounts, setAccounts] = useState([])
+
+  // Add Expense Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [addAmount, setAddAmount] = useState('')
+  const [addAccountId, setAddAccountId] = useState('')
+  const [addCategory, setAddCategory] = useState('Food')
+  const [addDescription, setAddDescription] = useState('')
+  const [addPaymentMethod, setAddPaymentMethod] = useState('UPI')
+  const [addDate, setAddDate] = useState(new Date().toISOString().split('T')[0])
+  const [addNotes, setAddNotes] = useState('')
+  const [addLoading, setAddLoading] = useState(false)
+  const [addError, setAddError] = useState('')
+  const [addSuccess, setAddSuccess] = useState('')
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -70,6 +88,82 @@ export const Transactions = () => {
     e.preventDefault()
     setPage(1)
     fetchTxns()
+  }
+
+  const fetchAccounts = async () => {
+    try {
+      const res = await accountService.getAccounts()
+      if (res.data?.success && res.data.data.length > 0) {
+        setAccounts(res.data.data)
+        if (!addAccountId) setAddAccountId(res.data.data[0].id)
+      }
+    } catch (e) {}
+  }
+
+  const handleOpenAddExpense = () => {
+    fetchAccounts()
+    setAddAmount('')
+    setAddDescription('')
+    setAddCategory('Food')
+    setAddPaymentMethod('UPI')
+    setAddDate(new Date().toISOString().split('T')[0])
+    setAddNotes('')
+    setAddError('')
+    setAddSuccess('')
+    setIsAddModalOpen(true)
+  }
+
+  const handleAddExpenseSubmit = async (e) => {
+    e.preventDefault()
+    setAddLoading(true)
+    setAddError('')
+    setAddSuccess('')
+
+    const expAmount = parseFloat(addAmount)
+    if (!expAmount || expAmount <= 0) {
+      setAddError('Expense amount must be greater than zero.')
+      setAddLoading(false)
+      return
+    }
+
+    const selectedAcc = accounts.find(a => String(a.id) === String(addAccountId))
+    if (!selectedAcc) {
+      setAddError('Please select a valid bank account to pay from.')
+      setAddLoading(false)
+      return
+    }
+
+    if (parseFloat(selectedAcc.balance) < expAmount) {
+      setAddError(`Insufficient balance in ${selectedAcc.account_name}. Available: ${formatCurrency(selectedAcc.balance)}, Required: ${formatCurrency(expAmount)}`)
+      setAddLoading(false)
+      return
+    }
+
+    try {
+      const payload = {
+        account: addAccountId,
+        transaction_type: 'EXPENSE',
+        amount: expAmount,
+        category: addCategory,
+        description: addDescription || `${addCategory} Expense`,
+        payment_method: addPaymentMethod,
+        transaction_date: addDate,
+        notes: addNotes,
+      }
+      const res = await transactionService.createTransaction(payload)
+      if (res.data?.success) {
+        setAddSuccess(`Expense of ${formatCurrency(expAmount)} recorded and deducted from ${selectedAcc.account_name}!`)
+        fetchTxns()
+        fetchAccounts()
+        setTimeout(() => {
+          setIsAddModalOpen(false)
+        }, 900)
+      }
+    } catch (err) {
+      setAddError(err.response?.data?.message || err.response?.data?.errors?.amount?.[0] || 'Failed to record expense.')
+    } finally {
+      setAddLoading(false)
+    }
   }
 
   const handleOpenEdit = (txn) => {
@@ -131,6 +225,12 @@ export const Transactions = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleOpenAddExpense}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add Expense
+          </button>
           <a
             href={reportService.exportCSVUrl('expense')}
             download
@@ -205,7 +305,19 @@ export const Transactions = () => {
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-[#A9A59A]">No transactions found.</td>
+                  <td colSpan={6} className="py-16 text-center text-[#A9A59A]">
+                    <div className="flex flex-col items-center justify-center">
+                      <ArrowRightLeft className="w-10 h-10 text-[#A9A59A] opacity-40 mb-2" />
+                      <p className="font-semibold text-[#F5F1E6]">No transactions recorded yet</p>
+                      <p className="text-[11px] text-[#A9A59A] mt-0.5">Start logging your expenses or income to track cash flow.</p>
+                      <button
+                        onClick={handleOpenAddExpense}
+                        className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] text-xs font-bold rounded-xl shadow-lg hover:brightness-110 transition-all"
+                      >
+                        <Plus className="w-4 h-4" /> Record First Expense
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 transactions.map((t) => {
@@ -415,6 +527,191 @@ export const Transactions = () => {
                   className="flex-1 px-4 py-2.5 bg-[#D4AF37] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110"
                 >
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Expense Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-[#2B2A24] flex items-center justify-between bg-[#0B0B0A]">
+              <div>
+                <h3 className="text-base font-bold text-[#F5F1E6] flex items-center gap-2">
+                  <ArrowDownRight className="w-4 h-4 text-red-400" /> Record New Expense
+                </h3>
+                <p className="text-[11px] text-[#A9A59A]">Deduct payment directly from your selected bank account</p>
+              </div>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1.5 rounded-full bg-[#171714] border border-[#2B2A24] text-[#A9A59A] hover:text-[#D4AF37]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddExpenseSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {addSuccess && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" /> {addSuccess}
+                </div>
+              )}
+
+              {addError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {addError}
+                </div>
+              )}
+
+              {accounts.length === 0 && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 text-xs">
+                  ⚠️ No linked bank accounts found. Please link an account on the Accounts page first.
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Expense Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    min="0.01"
+                    placeholder="0.00"
+                    value={addAmount}
+                    onChange={(e) => setAddAmount(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-base font-bold text-red-400 rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-[#A9A59A]">Deduct From Bank</label>
+                    {accounts.find(a => String(a.id) === String(addAccountId)) && (
+                      <span className="text-[10px] text-emerald-400 font-semibold truncate max-w-[90px]">
+                        Bal: ₹{parseFloat(accounts.find(a => String(a.id) === String(addAccountId)).balance).toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    required
+                    value={addAccountId}
+                    onChange={(e) => setAddAccountId(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-xs text-[#F5F1E6] rounded-xl px-2.5 py-3 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    {accounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.account_name} ({acc.masked_account_number}) — Bal: ₹{parseFloat(acc.balance).toLocaleString('en-IN')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Remaining Balance Preview */}
+              {accounts.find(a => String(a.id) === String(addAccountId)) && parseFloat(addAmount) > 0 && (
+                <div className="p-3 bg-[#0B0B0A] border border-[#2B2A24] rounded-xl flex items-center justify-between text-xs">
+                  <span className="text-[#A9A59A]">Balance After Deduction:</span>
+                  <span className={`font-bold font-['Space_Grotesk'] ${
+                    parseFloat(accounts.find(a => String(a.id) === String(addAccountId)).balance) - parseFloat(addAmount) >= 0
+                      ? 'text-emerald-400'
+                      : 'text-red-400'
+                  }`}>
+                    {formatCurrency(Math.max(0, parseFloat(accounts.find(a => String(a.id) === String(addAccountId)).balance) - parseFloat(addAmount)))}
+                  </span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Category</label>
+                  <select
+                    value={addCategory}
+                    onChange={(e) => setAddCategory(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="Food">Food &amp; Dining</option>
+                    <option value="Transport">Transport &amp; Fuel</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Utilities">Utilities &amp; Bills</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Education">Education</option>
+                    <option value="Bills">Bills</option>
+                    <option value="Other">Other Expense</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Payment Method</label>
+                  <select
+                    value={addPaymentMethod}
+                    onChange={(e) => setAddPaymentMethod(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="UPI">UPI</option>
+                    <option value="Debit Card">Debit Card</option>
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Net Banking">Net Banking</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cash">Cash</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Description / Merchant</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Swiggy Order / Fuel at Shell / Supermarket"
+                  value={addDescription}
+                  onChange={(e) => setAddDescription(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Transaction Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={addDate}
+                    onChange={(e) => setAddDate(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Notes (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Work reimbursement pending"
+                    value={addNotes}
+                    onChange={(e) => setAddNotes(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 border border-[#2B2A24] text-xs font-bold text-[#A9A59A] rounded-xl hover:bg-[#21201B]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addLoading || accounts.length === 0}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-amber-600 text-white font-bold text-xs rounded-xl shadow-lg hover:brightness-110 disabled:opacity-50 transition-all"
+                >
+                  {addLoading ? 'Deducting...' : 'Confirm & Deduct Expense'}
                 </button>
               </div>
             </form>

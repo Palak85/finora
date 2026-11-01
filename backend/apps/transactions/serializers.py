@@ -30,6 +30,23 @@ class TransactionSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("You do not own this bank account.")
         return account
 
+    def validate(self, attrs):
+        txn_type = attrs.get('transaction_type')
+        amount = attrs.get('amount')
+        account = attrs.get('account')
+
+        if account and account.status != 'Active':
+            raise serializers.ValidationError({
+                "account": "Selected bank account is not active."
+            })
+
+        if txn_type in ['EXPENSE', 'INVESTMENT', 'TRANSFER'] and account and amount:
+            if account.balance < amount:
+                raise serializers.ValidationError({
+                    "amount": f"Insufficient balance in {account.account_name}. Available: ₹{account.balance}, Required: ₹{amount}"
+                })
+        return attrs
+
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user

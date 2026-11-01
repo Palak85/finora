@@ -28,7 +28,22 @@ class TransactionListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            txn = serializer.save()
+            from apps.notifications.models import Notification
+            if txn.transaction_type == 'EXPENSE':
+                Notification.objects.create(
+                    user=request.user,
+                    title=f'💳 Expense Recorded: ₹{txn.amount}',
+                    message=f'{txn.description} paid via {txn.payment_method} from {txn.account.account_name}.',
+                    notification_type='Transaction'
+                )
+            elif txn.transaction_type == 'INCOME':
+                Notification.objects.create(
+                    user=request.user,
+                    title=f'💰 Income Credited: ₹{txn.amount}',
+                    message=f'{txn.description} deposited into {txn.account.account_name}.',
+                    notification_type='Transaction'
+                )
             return Response({
                 'success': True,
                 'message': 'Transaction recorded successfully.',
