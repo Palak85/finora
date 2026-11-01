@@ -19,7 +19,8 @@ import {
   Pencil,
   X,
   Target,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Compass
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -296,6 +297,46 @@ export const Dashboard = () => {
               ? `+${investment_summary.return_percentage || 0}% overall return`
               : 'No active positions'}
           </p>
+        </div>
+      </div>
+
+            {/* Financial Coach & Advisor Guidance Card for Customer */}
+      <div className="bg-gradient-to-r from-[#171714] via-[#21201B] to-[#171714] border border-[#D4AF37]/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#9A7B1C] flex items-center justify-center text-[#0B0B0A] shadow-lg shadow-[#D4AF37]/20 shrink-0 mt-1">
+              <Compass className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                  Assigned Wealth Coach
+                </span>
+                <span className="text-xs text-[#A9A59A]">Elena Vance • advisor@finora.com</span>
+              </div>
+              <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk'] mt-1">
+                Advisory Health &amp; Goal Navigation
+              </h3>
+              <p className="text-xs text-[#A9A59A] mt-0.5 max-w-2xl leading-relaxed">
+                Your advisor is actively monitoring your 4 financial pillars: Financial Health ({financial_health_score}/100), Asset Compounding (+{investment_summary.return_percentage || 0}%), Emergency Runway, and Life Goals.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/notifications"
+              className="px-4 py-2 bg-[#D4AF37] hover:bg-[#C9A227] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+            >
+              <Bell className="w-3.5 h-3.5" /> View Advisor Advice
+            </Link>
+            <Link
+              to="/goals"
+              className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#21201B] border border-[#2B2A24] text-[#F5F1E6] font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+            >
+              <Target className="w-3.5 h-3.5 text-[#D4AF37]" /> Track Goals
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -210,6 +210,16 @@ export const Transactions = () => {
     }
   }
 
+  const totalInflows = transactions
+    .filter(t => t.transaction_type === 'INCOME')
+    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
+
+  const totalOutflows = transactions
+    .filter(t => t.transaction_type === 'EXPENSE')
+    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
+
+  const netCashFlow = totalInflows - totalOutflows
+
   const handleDelete = async (id) => {
     if (window.confirm('Delete this transaction?')) {
       try {
@@ -248,6 +258,61 @@ export const Transactions = () => {
           >
             <Download className="w-4 h-4" /> Export CSV
           </a>
+        </div>
+      </div>
+
+      {/* Executive Transaction Tracking KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-emerald-500/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Total Inflows</span>
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <ArrowDownRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-emerald-400 font-['Space_Grotesk']">
+            {formatCurrency(totalInflows)}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">Income & Deposits</p>
+        </div>
+
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-red-500/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Total Outflows</span>
+            <div className="w-6 h-6 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-red-400 font-['Space_Grotesk']">
+            {formatCurrency(totalOutflows)}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">Recorded Expenses</p>
+        </div>
+
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37]/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Net Cash Flow</span>
+            <div className="w-6 h-6 rounded-lg bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center">
+              <Wallet className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className={`text-lg font-bold font-['Space_Grotesk'] ${netCashFlow >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {netCashFlow >= 0 ? '+' : ''}{formatCurrency(netCashFlow)}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">Period Net Position</p>
+        </div>
+
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37]/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Transactions Volume</span>
+            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-[#F5F1E6] font-['Space_Grotesk']">
+            {transactions.length}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">Audited Records</p>
         </div>
       </div>
 

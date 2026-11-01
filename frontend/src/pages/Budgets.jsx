@@ -110,6 +110,12 @@ export const Budgets = () => {
     }
   }
 
+  const totalBudgetLimit = budgets.reduce((sum, b) => sum + (parseFloat(b.monthly_limit) || 0), 0)
+  const totalBudgetSpent = budgets.reduce((sum, b) => sum + (parseFloat(b.spent_amount) || 0), 0)
+  const remainingBudgetBuffer = Math.max(0, totalBudgetLimit - totalBudgetSpent)
+  const overallAdherencePct = totalBudgetLimit > 0 ? Math.min(100, Math.round((totalBudgetSpent / totalBudgetLimit) * 100)) : 0
+  const overspentList = budgets.filter(b => b.status === 'EXCEEDED' || parseFloat(b.spent_amount) > parseFloat(b.monthly_limit))
+
   const handleDelete = async (id) => {
     if (window.confirm('Delete this budget?')) {
       try {
@@ -164,6 +170,88 @@ export const Budgets = () => {
               Clear filter
             </button>
           )}
+        </div>
+      )}
+
+      {/* Executive Budget Tracking KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37]/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Total Budget Limit</span>
+            <div className="w-6 h-6 rounded-lg bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center">
+              <PieChart className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-[#F5F1E6] font-['Space_Grotesk']">
+            {formatCurrency(totalBudgetLimit)}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">{budgets.length} Categories Allocated</p>
+        </div>
+
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-red-500/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Total Realized Spend</span>
+            <div className="w-6 h-6 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-red-400 font-['Space_Grotesk']">
+            {formatCurrency(totalBudgetSpent)}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">Month-to-Date Outlay</p>
+        </div>
+
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-emerald-500/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Remaining Buffer</span>
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-emerald-400 font-['Space_Grotesk']">
+            {formatCurrency(remainingBudgetBuffer)}
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">Available Headroom</p>
+        </div>
+
+        <div className="bg-[#171714] border border-[#2B2A24] hover:border-[#D4AF37]/40 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between text-[#A9A59A] text-xs mb-2">
+            <span>Overall Adherence</span>
+            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <h3 className="text-lg font-bold text-[#F5F1E6] font-['Space_Grotesk']">
+            {overallAdherencePct}%
+          </h3>
+          <p className="text-[11px] text-[#A9A59A] mt-1 font-medium">
+            {overspentList.length > 0 ? `${overspentList.length} Categories Exceeded` : 'All Categories On Track'}
+          </p>
+        </div>
+      </div>
+
+      {/* Active Overspending Warning Alert Section */}
+      {overspentList.length > 0 && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <h3 className="text-xs font-bold text-red-300 uppercase tracking-wider">
+              Budget Overrun Alerts: {overspentList.length} Categories Exceeded Limits
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {overspentList.map(b => (
+              <div key={b.id} className="bg-[#171714] border border-red-500/40 rounded-xl p-3 flex items-center justify-between text-xs">
+                <div>
+                  <span className="font-bold text-[#F5F1E6]">{b.category}</span>
+                  <p className="text-[10px] text-[#A9A59A]">Limit: {formatCurrency(b.monthly_limit)} • Spent: {formatCurrency(b.spent_amount)}</p>
+                </div>
+                <span className="font-bold text-red-400 font-['Space_Grotesk']">
+                  +{formatCurrency(b.overspending_amount || (b.spent_amount - b.monthly_limit))}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

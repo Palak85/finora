@@ -1,7 +1,17 @@
-search-path = ["backend"]
-python-interpreter-path = "C:\\Users\\91790\\Desktop\\django\\myenv\\Scripts\\python.exe"
+search-path = [
+    "backend",
+    "backend/apps",
+    "backend/venv/Lib/site-packages"
+]
+python-interpreter-path = "backend/venv/Scripts/python.exe"
 
 [errors]
 missing-import = "ignore"
 missing-attribute = "ignore"
 unknown-attribute-access = "ignore"
+inconsistent-override = "ignore"
+bad-override = "ignore"
+override-error = "ignore"
+missing-type-stub = "ignore"
+missing-type-stubs = "ignore"
+cannot-find-type-stubs = "ignore"

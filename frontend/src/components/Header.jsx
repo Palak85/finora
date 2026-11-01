@@ -26,6 +26,8 @@ export const Header = ({ onOpenQuickAdd }) => {
         return '📈'
       case 'Budget Alert':
         return '🚨'
+      case 'Advisor':
+        return '🧭'
       case 'Goal':
         return '🎯'
       case 'Security':

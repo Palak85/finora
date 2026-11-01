@@ -138,6 +138,8 @@ export const NotificationProvider = ({ children }) => {
         return '📈'
       case 'Budget Alert':
         return '🚨'
+      case 'Advisor':
+        return '🧭'
       case 'Goal':
         return '🎯'
       case 'Security':
