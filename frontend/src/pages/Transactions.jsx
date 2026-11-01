@@ -10,7 +10,10 @@ import {
   Download,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Pencil,
+  X,
+  CheckCircle2
 } from 'lucide-react'
 import { transactionService, reportService } from '../services/api'
 import { formatCurrency, formatDate } from '../utils/formatters'
@@ -23,6 +26,18 @@ export const Transactions = () => {
   const [typeFilter, setTypeFilter] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingTxn, setEditingTxn] = useState(null)
+  const [editDescription, setEditDescription] = useState('')
+  const [editAmount, setEditAmount] = useState('')
+  const [editCategory, setEditCategory] = useState('Food')
+  const [editType, setEditType] = useState('EXPENSE')
+  const [editPaymentMethod, setEditPaymentMethod] = useState('UPI')
+  const [editDate, setEditDate] = useState('')
+  const [editError, setEditError] = useState('')
+  const [editSuccess, setEditSuccess] = useState('')
 
   const fetchTxns = async () => {
     setLoading(true)
@@ -55,6 +70,46 @@ export const Transactions = () => {
     e.preventDefault()
     setPage(1)
     fetchTxns()
+  }
+
+  const handleOpenEdit = (txn) => {
+    setEditingTxn(txn)
+    setEditDescription(txn.description || '')
+    setEditAmount(txn.amount || '')
+    setEditCategory(txn.category || 'Food')
+    setEditType(txn.transaction_type || 'EXPENSE')
+    setEditPaymentMethod(txn.payment_method || 'UPI')
+    setEditDate(txn.transaction_date ? txn.transaction_date.split('T')[0] : '')
+    setEditError('')
+    setEditSuccess('')
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateTxn = async (e) => {
+    e.preventDefault()
+    setEditError('')
+    setEditSuccess('')
+    try {
+      const payload = {
+        description: editDescription,
+        amount: parseFloat(editAmount),
+        category: editCategory,
+        transaction_type: editType,
+        payment_method: editPaymentMethod,
+        transaction_date: editDate,
+      }
+      const res = await transactionService.updateTransaction(editingTxn.id, payload)
+      if (res.data?.success) {
+        setEditSuccess('Transaction updated successfully!')
+        fetchTxns()
+        setTimeout(() => {
+          setIsEditModalOpen(false)
+          setEditingTxn(null)
+        }, 800)
+      }
+    } catch (err) {
+      setEditError(err.response?.data?.message || err.response?.data?.errors?.amount?.[0] || 'Failed to update transaction.')
+    }
   }
 
   const handleDelete = async (id) => {
@@ -183,12 +238,22 @@ export const Transactions = () => {
                         {isInc ? '+' : '-'}{formatCurrency(t.amount)}
                       </td>
                       <td className="py-4 px-6 text-center">
-                        <button
-                          onClick={() => handleDelete(t.id)}
-                          className="p-1.5 rounded-lg text-[#A9A59A] hover:text-red-400 hover:bg-red-500/10 transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleOpenEdit(t)}
+                            className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                            title="Edit Transaction"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="p-1.5 rounded-lg text-[#A9A59A] hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Delete Transaction"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -219,6 +284,143 @@ export const Transactions = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Transaction Modal */}
+      {isEditModalOpen && editingTxn && (
+        <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2B2A24]">
+              <div>
+                <h3 className="text-base font-bold text-[#F5F1E6]">Edit Transaction</h3>
+                <p className="text-[10px] text-[#A9A59A] font-mono mt-0.5">Ref: {editingTxn.reference_id}</p>
+              </div>
+              <button
+                onClick={() => { setIsEditModalOpen(false); setEditingTxn(null); }}
+                className="p-1 text-[#A9A59A] hover:text-[#F5F1E6]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {editSuccess}
+              </div>
+            )}
+
+            {editError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateTxn} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Description</label>
+                <input
+                  type="text"
+                  required
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Type</label>
+                  <select
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="EXPENSE">Expense</option>
+                    <option value="INCOME">Income</option>
+                    <option value="TRANSFER">Transfer</option>
+                    <option value="INVESTMENT">Investment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Category</label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="Food">Food &amp; Dining</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Salary">Salary</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Education">Education</option>
+                    <option value="Investment">Investment</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Payment Method</label>
+                  <select
+                    value={editPaymentMethod}
+                    onChange={(e) => setEditPaymentMethod(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="UPI">UPI</option>
+                    <option value="CARD">Debit / Credit Card</option>
+                    <option value="NET_BANKING">Net Banking</option>
+                    <option value="CASH">Cash</option>
+                    <option value="WIRE">Wire Transfer</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Transaction Date</label>
+                <input
+                  type="date"
+                  required
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditModalOpen(false); setEditingTxn(null); }}
+                  className="flex-1 px-4 py-2.5 border border-[#2B2A24] text-xs font-bold text-[#A9A59A] rounded-xl hover:bg-[#21201B]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-[#D4AF37] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

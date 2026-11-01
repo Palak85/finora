@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { PieChart, Plus, AlertTriangle, ShieldCheck, AlertCircle, Trash2, X, CheckCircle2, Users } from 'lucide-react'
+import { PieChart, Plus, AlertTriangle, ShieldCheck, AlertCircle, Trash2, X, CheckCircle2, Users, Pencil } from 'lucide-react'
 import { budgetService, authService } from '../services/api'
 import { formatCurrency } from '../utils/formatters'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +9,7 @@ export const Budgets = () => {
   const [budgets, setBudgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingBudget, setEditingBudget] = useState(null)
   const [category, setCategory] = useState('Food')
   const [limit, setLimit] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
@@ -51,27 +52,61 @@ export const Budgets = () => {
     fetchBudgets()
   }, [selectedUserId])
 
-  const handleCreateBudget = async (e) => {
+  const handleOpenCreate = () => {
+    setEditingBudget(null)
+    setCategory('Food')
+    setLimit('')
+    setErrorMsg('')
+    setSuccessMsg('')
+    setIsModalOpen(true)
+  }
+
+  const handleOpenEdit = (budget) => {
+    setEditingBudget(budget)
+    setCategory(budget.category || 'Food')
+    setLimit(budget.monthly_limit || '')
+    setErrorMsg('')
+    setSuccessMsg('')
+    setIsModalOpen(true)
+  }
+
+  const handleSubmitBudget = async (e) => {
     e.preventDefault()
     setErrorMsg('')
     setSuccessMsg('')
     try {
-      const res = await budgetService.createBudget({
-        category,
-        monthly_limit: parseFloat(limit),
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-      })
-      if (res.data?.success) {
-        setSuccessMsg('Budget created!')
-        fetchBudgets()
-        setTimeout(() => {
-          setIsModalOpen(false)
-          setLimit('')
-        }, 800)
+      if (editingBudget) {
+        const res = await budgetService.updateBudget(editingBudget.id, {
+          category,
+          monthly_limit: parseFloat(limit),
+        })
+        if (res.data?.success) {
+          setSuccessMsg('Budget updated!')
+          fetchBudgets()
+          setTimeout(() => {
+            setIsModalOpen(false)
+            setEditingBudget(null)
+            setLimit('')
+          }, 800)
+        }
+      } else {
+        const res = await budgetService.createBudget({
+          category,
+          monthly_limit: parseFloat(limit),
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear(),
+        })
+        if (res.data?.success) {
+          setSuccessMsg('Budget created!')
+          fetchBudgets()
+          setTimeout(() => {
+            setIsModalOpen(false)
+            setLimit('')
+          }, 800)
+        }
       }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Failed to create budget.')
+      setErrorMsg(err.response?.data?.message || err.response?.data?.errors?.monthly_limit?.[0] || 'Failed to save budget.')
     }
   }
 
@@ -94,7 +129,7 @@ export const Budgets = () => {
         </div>
         {!isAdmin && (
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenCreate}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:brightness-110 active:scale-95 transition-all"
           >
             <Plus className="w-4 h-4" /> Create Category Budget
@@ -152,7 +187,7 @@ export const Budgets = () => {
           </p>
           {!isAdmin && (
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenCreate}
               className="mt-5 flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] font-bold text-xs rounded-xl hover:brightness-110 transition-all"
             >
               <Plus className="w-4 h-4" /> Create Category Budget
@@ -182,7 +217,7 @@ export const Budgets = () => {
                       <p className="text-[10px] text-[#A9A59A] mt-0.5">{b.user_full_name}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border ${
                       isExceeded
                         ? 'bg-red-500/20 text-red-400 border-red-500/40'
@@ -193,12 +228,22 @@ export const Budgets = () => {
                       {b.status}
                     </span>
                     {!isAdmin && (
-                      <button
-                        onClick={() => handleDelete(b.id)}
-                        className="p-1 text-[#A9A59A] hover:text-red-400"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleOpenEdit(b)}
+                          className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                          title="Edit Budget"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(b.id)}
+                          className="p-1.5 rounded-lg text-[#A9A59A] hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          title="Delete Budget"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -231,12 +276,14 @@ export const Budgets = () => {
         </div>
       )}
 
-      {/* Create Budget Modal — only for non-admin users */}
+      {/* Create / Edit Budget Modal — only for non-admin users */}
       {isModalOpen && !isAdmin && (
         <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#2B2A24]">
-              <h3 className="text-base font-bold text-[#F5F1E6]">Set Monthly Budget</h3>
+              <h3 className="text-base font-bold text-[#F5F1E6]">
+                {editingBudget ? 'Edit Category Budget' : 'Set Monthly Budget'}
+              </h3>
               <button onClick={() => setIsModalOpen(false)} className="p-1 text-[#A9A59A] hover:text-[#F5F1E6]">
                 <X className="w-5 h-5" />
               </button>
@@ -254,7 +301,7 @@ export const Budgets = () => {
               </div>
             )}
 
-            <form onSubmit={handleCreateBudget} className="space-y-4">
+            <form onSubmit={handleSubmitBudget} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Category</label>
                 <select
@@ -297,7 +344,7 @@ export const Budgets = () => {
                   type="submit"
                   className="flex-1 px-4 py-2.5 bg-[#D4AF37] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110"
                 >
-                  Save Budget
+                  {editingBudget ? 'Save Changes' : 'Save Budget'}
                 </button>
               </div>
             </form>

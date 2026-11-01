@@ -15,13 +15,15 @@ import {
   DollarSign,
   Bell,
   Radio,
-  CheckCircle2
+  CheckCircle2,
+  Pencil,
+  X
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts'
-import { dashboardService, analyticsService } from '../services/api'
+import { dashboardService, analyticsService, transactionService, goalService } from '../services/api'
 import { useNotification } from '../context/NotificationContext'
 import { formatCurrency, formatDate, maskAccountNumber } from '../utils/formatters'
 
@@ -54,6 +56,87 @@ export const Dashboard = () => {
   const [data, setData] = useState(null)
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Transaction Edit Modal State
+  const [editingTxn, setEditingTxn] = useState(null)
+  const [txnDesc, setTxnDesc] = useState('')
+  const [txnAmount, setTxnAmount] = useState('')
+  const [txnCategory, setTxnCategory] = useState('Food')
+  const [txnType, setTxnType] = useState('EXPENSE')
+  const [txnMethod, setTxnMethod] = useState('UPI')
+  const [txnDate, setTxnDate] = useState('')
+  const [txnError, setTxnError] = useState('')
+
+  // Goal Edit Modal State
+  const [editingGoal, setEditingGoal] = useState(null)
+  const [goalName, setGoalName] = useState('')
+  const [goalTarget, setGoalTarget] = useState('')
+  const [goalCurrent, setGoalCurrent] = useState('')
+  const [goalDate, setGoalDate] = useState('')
+  const [goalContrib, setGoalContrib] = useState('')
+  const [goalError, setGoalError] = useState('')
+
+  const handleOpenEditTxn = (txn) => {
+    setEditingTxn(txn)
+    setTxnDesc(txn.description || '')
+    setTxnAmount(txn.amount || '')
+    setTxnCategory(txn.category || 'Food')
+    setTxnType(txn.transaction_type || 'EXPENSE')
+    setTxnMethod(txn.payment_method || 'UPI')
+    setTxnDate(txn.transaction_date ? txn.transaction_date.split('T')[0] : '')
+    setTxnError('')
+  }
+
+  const handleSaveTxn = async (e) => {
+    e.preventDefault()
+    setTxnError('')
+    try {
+      const res = await transactionService.updateTransaction(editingTxn.id, {
+        description: txnDesc,
+        amount: parseFloat(txnAmount),
+        category: txnCategory,
+        transaction_type: txnType,
+        payment_method: txnMethod,
+        transaction_date: txnDate,
+      })
+      if (res.data?.success) {
+        setEditingTxn(null)
+        loadDashboard()
+      }
+    } catch (err) {
+      setTxnError(err.response?.data?.message || 'Failed to update transaction.')
+    }
+  }
+
+  const handleOpenEditGoal = (g) => {
+    setEditingGoal(g)
+    setGoalName(g.name || '')
+    setGoalTarget(g.target_amount || '')
+    setGoalCurrent(g.current_amount || '')
+    setGoalDate(g.target_date || '')
+    setGoalContrib(g.monthly_contribution || '')
+    setGoalError('')
+  }
+
+  const handleSaveGoal = async (e) => {
+    e.preventDefault()
+    setGoalError('')
+    try {
+      const res = await goalService.updateGoal(editingGoal.id, {
+        name: goalName,
+        target_amount: parseFloat(goalTarget),
+        current_amount: parseFloat(goalCurrent || 0),
+        target_date: goalDate,
+        monthly_contribution: parseFloat(goalContrib || 0),
+      })
+      if (res.data?.success) {
+        setEditingGoal(null)
+        loadDashboard()
+      }
+    } catch (err) {
+      setGoalError(err.response?.data?.message || 'Failed to update goal.')
+    }
+  }
 
   const loadDashboard = async () => {
     setLoading(true)
@@ -402,13 +485,22 @@ export const Dashboard = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-xs font-bold font-['Space_Grotesk'] ${
-                      isIncome ? 'text-emerald-400' : 'text-[#F5F1E6]'
-                    }`}>
-                      {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
-                    </p>
-                    <p className="text-[9px] text-[#A9A59A] font-mono">{txn.reference_id}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className={`text-xs font-bold font-['Space_Grotesk'] ${
+                        isIncome ? 'text-emerald-400' : 'text-[#F5F1E6]'
+                      }`}>
+                        {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                      </p>
+                      <p className="text-[9px] text-[#A9A59A] font-mono">{txn.reference_id}</p>
+                    </div>
+                    <button
+                      onClick={() => handleOpenEditTxn(txn)}
+                      className="p-1.5 rounded-lg text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                      title="Edit Transaction"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               )
@@ -432,7 +524,16 @@ export const Dashboard = () => {
             <div key={g.id} className="p-4 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#F5F1E6] truncate">{g.name}</span>
-                <span className="text-xs font-extrabold text-[#D4AF37]">{g.progress_percentage}%</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-extrabold text-[#D4AF37]">{g.progress_percentage}%</span>
+                  <button
+                    onClick={() => handleOpenEditGoal(g)}
+                    className="p-1 rounded-md text-[#A9A59A] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
+                    title="Edit Goal"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
               <div className="w-full h-2 bg-[#2B2A24] rounded-full overflow-hidden">
                 <div
@@ -448,6 +549,228 @@ export const Dashboard = () => {
           ))}
         </div>
       </div>
+
+      {/* Edit Transaction Modal on Dashboard */}
+      {editingTxn && (
+        <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2B2A24]">
+              <div>
+                <h3 className="text-base font-bold text-[#F5F1E6]">Edit Transaction</h3>
+                <p className="text-[10px] text-[#A9A59A] font-mono mt-0.5">Ref: {editingTxn.reference_id}</p>
+              </div>
+              <button onClick={() => setEditingTxn(null)} className="p-1 text-[#A9A59A] hover:text-[#F5F1E6]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {txnError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold">
+                {txnError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveTxn} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Description</label>
+                <input
+                  type="text"
+                  required
+                  value={txnDesc}
+                  onChange={(e) => setTxnDesc(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Type</label>
+                  <select
+                    value={txnType}
+                    onChange={(e) => setTxnType(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="EXPENSE">Expense</option>
+                    <option value="INCOME">Income</option>
+                    <option value="TRANSFER">Transfer</option>
+                    <option value="INVESTMENT">Investment</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={txnAmount}
+                    onChange={(e) => setTxnAmount(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Category</label>
+                  <select
+                    value={txnCategory}
+                    onChange={(e) => setTxnCategory(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="Food">Food &amp; Dining</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Salary">Salary</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Education">Education</option>
+                    <option value="Investment">Investment</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Method</label>
+                  <select
+                    value={txnMethod}
+                    onChange={(e) => setTxnMethod(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  >
+                    <option value="UPI">UPI</option>
+                    <option value="CARD">Debit / Credit Card</option>
+                    <option value="NET_BANKING">Net Banking</option>
+                    <option value="CASH">Cash</option>
+                    <option value="WIRE">Wire Transfer</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Date</label>
+                <input
+                  type="date"
+                  required
+                  value={txnDate}
+                  onChange={(e) => setTxnDate(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingTxn(null)}
+                  className="flex-1 px-4 py-2.5 border border-[#2B2A24] text-xs font-bold text-[#A9A59A] rounded-xl hover:bg-[#21201B]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-[#D4AF37] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Goal Modal on Dashboard */}
+      {editingGoal && (
+        <div className="fixed inset-0 bg-[#0B0B0A]/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2B2A24]">
+              <h3 className="text-base font-bold text-[#F5F1E6]">Edit Financial Goal</h3>
+              <button onClick={() => setEditingGoal(null)} className="p-1 text-[#A9A59A] hover:text-[#F5F1E6]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {goalError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold">
+                {goalError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveGoal} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Goal Name</label>
+                <input
+                  type="text"
+                  required
+                  value={goalName}
+                  onChange={(e) => setGoalName(e.target.value)}
+                  className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Target (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={goalTarget}
+                    onChange={(e) => setGoalTarget(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Current Saved (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={goalCurrent}
+                    onChange={(e) => setGoalCurrent(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Target Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={goalDate}
+                    onChange={(e) => setGoalDate(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#A9A59A] mb-1">Monthly (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={goalContrib}
+                    onChange={(e) => setGoalContrib(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-sm text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingGoal(null)}
+                  className="flex-1 px-4 py-2.5 border border-[#2B2A24] text-xs font-bold text-[#A9A59A] rounded-xl hover:bg-[#21201B]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-[#D4AF37] text-[#0B0B0A] font-bold text-xs rounded-xl shadow-lg hover:brightness-110"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
