@@ -10,7 +10,8 @@ from apps.users.views import (
     AdvisorRequestRejectView, AdvisorAssignedClientsView,
     AdminStatsView, AdminAdvisorsView, AdminAdvisorDetailView,
     AdminAdvisorToggleStatusView, AdminCustomersView, AdminCustomerDetailView,
-    AdminCustomerToggleStatusView, AdminSecurityView, AdminSystemSettingsView
+    AdminCustomerToggleStatusView, AdminCustomerAssignAdvisorView, AdminSecurityView, AdminSystemSettingsView,
+    PublicSystemSettingsView
 )
 
 urlpatterns = [
@@ -21,6 +22,9 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
+    # Platform Presentation / System Configuration (Accessible to All Roles)
+    path('api/system/config/', PublicSystemSettingsView.as_view(), name='public_system_config'),
+
     # Dedicated Customer Advisor Assignment & Request Endpoints
     path('api/customer/available-advisors/', AvailableAdvisorsView.as_view(), name='customer_available_advisors'),
     path('api/customer/my-advisor/', CustomerAdvisorView.as_view(), name='customer_my_advisor'),
@@ -41,17 +45,7 @@ urlpatterns = [
     path('api/admin/customers/', AdminCustomersView.as_view(), name='admin_customers_list'),
     path('api/admin/customers/<int:id>/', AdminCustomerDetailView.as_view(), name='admin_customer_detail'),
     path('api/admin/customers/<int:id>/toggle-status/', AdminCustomerToggleStatusView.as_view(), name='admin_customer_toggle_status'),
-    path('api/admin/security/', AdminSecurityView.as_view(), name='admin_security_overview'),
-    path('api/admin/settings/', AdminSystemSettingsView.as_view(), name='admin_system_settings'),
-    
-    # Dedicated System Administrator Endpoints
-    path('api/admin/stats/', AdminStatsView.as_view(), name='admin_console_stats'),
-    path('api/admin/advisors/', AdminAdvisorsView.as_view(), name='admin_advisors_list'),
-    path('api/admin/advisors/<int:id>/', AdminAdvisorDetailView.as_view(), name='admin_advisor_detail'),
-    path('api/admin/advisors/<int:id>/toggle-status/', AdminAdvisorToggleStatusView.as_view(), name='admin_advisor_toggle_status'),
-    path('api/admin/customers/', AdminCustomersView.as_view(), name='admin_customers_list'),
-    path('api/admin/customers/<int:id>/', AdminCustomerDetailView.as_view(), name='admin_customer_detail'),
-    path('api/admin/customers/<int:id>/toggle-status/', AdminCustomerToggleStatusView.as_view(), name='admin_customer_toggle_status'),
+    path('api/admin/customers/<int:id>/assign-advisor/', AdminCustomerAssignAdvisorView.as_view(), name='admin_customer_assign_advisor'),
     path('api/admin/security/', AdminSecurityView.as_view(), name='admin_security_overview'),
     path('api/admin/settings/', AdminSystemSettingsView.as_view(), name='admin_system_settings'),
     

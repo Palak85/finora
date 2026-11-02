@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from .models import Budget
 from .serializers import BudgetSerializer
 from apps.users.permissions import IsOwnerOrAdvisorOrAdmin
+from apps.users.models import AdvisorAssignment
 from datetime import datetime
 
 class BudgetListCreateView(generics.ListCreateAPIView):
@@ -11,11 +12,19 @@ class BudgetListCreateView(generics.ListCreateAPIView):
 
     def _base_qs(self, user, month, year):
         """Return budget queryset for the given month/year, respecting role."""
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
                 return Budget.objects.filter(user_id=user_id, month=month, year=year)
             return Budget.objects.filter(month=month, year=year)
+        elif user.role == 'FINANCIAL_ADVISOR':
+            user_id = self.request.query_params.get('user_id')
+            if user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists():
+                    return Budget.objects.filter(user_id=user_id, month=month, year=year)
+                return Budget.objects.none()
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Budget.objects.filter(user_id__in=assigned_ids, month=month, year=year)
         return Budget.objects.filter(user=user, month=month, year=year)
 
     def get_queryset(self):
@@ -30,9 +39,16 @@ class BudgetListCreateView(generics.ListCreateAPIView):
         # provided, fall back to the most recent month that has budget data.
         explicit_month = self.request.query_params.get('month')
         if not qs.exists() and not explicit_month:
-            if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+            if user.role == 'ADMINISTRATOR' or user.is_superuser:
                 user_id = self.request.query_params.get('user_id')
                 scope = Budget.objects.filter(user_id=user_id) if user_id else Budget.objects.all()
+            elif user.role == 'FINANCIAL_ADVISOR':
+                user_id = self.request.query_params.get('user_id')
+                if user_id:
+                    scope = Budget.objects.filter(user_id=user_id) if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists() else Budget.objects.none()
+                else:
+                    assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+                    scope = Budget.objects.filter(user_id__in=assigned_ids)
             else:
                 scope = Budget.objects.filter(user=user)
 
@@ -72,8 +88,11 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             return Budget.objects.all()
+        elif user.role == 'FINANCIAL_ADVISOR':
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Budget.objects.filter(user_id__in=assigned_ids)
         return Budget.objects.filter(user=user)
 
     def update(self, request, *args, **kwargs):

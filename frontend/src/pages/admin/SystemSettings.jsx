@@ -1,3 +1,17 @@
+
+const normalizeAdvisorMode = (mode) => {
+  if (!mode) return 'CLIENT_REQUEST'
+  const upper = String(mode).toUpperCase()
+  if (upper.includes('ADMIN')) return 'ADMIN_ONLY'
+  return 'CLIENT_REQUEST'
+}
+
+const normalizeThemeMode = (mode) => {
+  if (!mode) return 'DARK_GOLD'
+  const upper = String(mode).toUpperCase()
+  if (upper.includes('LIGHT')) return 'LIGHT_CLASSIC'
+  return 'DARK_GOLD'
+}
 import React, { useState, useEffect } from 'react'
 import {
   Settings,
@@ -16,14 +30,17 @@ import {
 } from 'lucide-react'
 import { adminService } from '../../services/api'
 import { formatDate } from '../../utils/formatters'
+import { useTheme } from '../../context/ThemeContext'
 
 export const SystemSettings = () => {
+  const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [actionSuccess, setActionSuccess] = useState('')
   const [actionError, setActionError] = useState('')
+  const [themeFieldTouched, setThemeFieldTouched] = useState(false)
 
   // Form states
   const [formData, setFormData] = useState({
@@ -32,13 +49,23 @@ export const SystemSettings = () => {
     default_currency: 'INR',
     timezone_pref: 'Asia/Kolkata',
     date_format: 'DD/MM/YYYY',
-    theme_mode: 'DARK_GOLD',
+    theme_mode: theme === 'light' ? 'LIGHT_CLASSIC' : 'DARK_GOLD',
     advisor_assignment_mode: 'CLIENT_REQUEST',
     allow_customer_registration: true,
     maintenance_mode: false,
     email_alerts_enabled: true,
     security_audit_logging: true,
   })
+
+  // Align theme_mode with active view theme if admin toggles theme in header and hasn't manually selected in form
+  useEffect(() => {
+    if (!themeFieldTouched) {
+      setFormData((prev) => ({
+        ...prev,
+        theme_mode: theme === 'light' ? 'LIGHT_CLASSIC' : 'DARK_GOLD',
+      }))
+    }
+  }, [theme, themeFieldTouched])
 
   const fetchSettings = async () => {
     setLoading(true)
@@ -47,14 +74,15 @@ export const SystemSettings = () => {
       const res = await adminService.getSystemSettings()
       if (res.data?.success && res.data.data) {
         setSettings(res.data.data)
+        const activeTheme = normalizeThemeMode(res.data.data.theme_mode)
         setFormData({
           app_name: res.data.data.app_name || 'FINORA Pro',
           app_description: res.data.data.app_description || '',
           default_currency: res.data.data.default_currency || 'INR',
           timezone_pref: res.data.data.timezone_pref || 'Asia/Kolkata',
           date_format: res.data.data.date_format || 'DD/MM/YYYY',
-          theme_mode: res.data.data.theme_mode || 'DARK_GOLD',
-          advisor_assignment_mode: res.data.data.advisor_assignment_mode || 'CLIENT_REQUEST',
+          theme_mode: themeFieldTouched ? formData.theme_mode : activeTheme,
+          advisor_assignment_mode: normalizeAdvisorMode(res.data.data.advisor_assignment_mode),
           allow_customer_registration: Boolean(res.data.data.allow_customer_registration),
           maintenance_mode: Boolean(res.data.data.maintenance_mode),
           email_alerts_enabled: Boolean(res.data.data.email_alerts_enabled),
@@ -89,6 +117,23 @@ export const SystemSettings = () => {
       const res = await adminService.updateSystemSettings(formData)
       if (res.data?.success) {
         setActionSuccess('System configuration saved successfully. All changes are active immediately.')
+        // Sync local storage immediately for Customer and Advisor sessions
+        if (res.data.data?.default_currency) {
+          localStorage.setItem('finora_currency', res.data.data.default_currency)
+        }
+        if (res.data.data?.date_format) {
+          localStorage.setItem('finora_date_format', res.data.data.date_format)
+        }
+        // Sync visual identity theme across all platform interfaces (Advisor, Customer, Admin)
+        if (res.data.data?.theme_mode) {
+          const appliedTheme = normalizeThemeMode(res.data.data.theme_mode) === 'LIGHT_CLASSIC' ? 'light' : 'dark'
+          setTheme(appliedTheme)
+          localStorage.setItem('finora_theme', appliedTheme)
+          window.dispatchEvent(new CustomEvent('finora_theme_updated', { detail: appliedTheme }))
+        }
+        // Broadcast event to all modules across FINORA (currency, formats, maintenance, theme)
+        window.dispatchEvent(new CustomEvent('finora_system_config_updated', { detail: res.data.data }))
+        setThemeFieldTouched(false)
         await fetchSettings()
       }
     } catch (err) {
@@ -100,14 +145,16 @@ export const SystemSettings = () => {
 
   const handleReset = () => {
     if (settings) {
+      setThemeFieldTouched(false)
+      const activeTheme = normalizeThemeMode(settings.theme_mode)
       setFormData({
         app_name: settings.app_name || 'FINORA Pro',
         app_description: settings.app_description || '',
         default_currency: settings.default_currency || 'INR',
         timezone_pref: settings.timezone_pref || 'Asia/Kolkata',
         date_format: settings.date_format || 'DD/MM/YYYY',
-        theme_mode: settings.theme_mode || 'DARK_GOLD',
-        advisor_assignment_mode: settings.advisor_assignment_mode || 'CLIENT_REQUEST',
+        theme_mode: activeTheme,
+        advisor_assignment_mode: normalizeAdvisorMode(settings.advisor_assignment_mode),
         allow_customer_registration: Boolean(settings.allow_customer_registration),
         maintenance_mode: Boolean(settings.maintenance_mode),
         email_alerts_enabled: Boolean(settings.email_alerts_enabled),
@@ -296,8 +343,16 @@ export const SystemSettings = () => {
                   <option value="CLIENT_REQUEST">Client Directed (Clients choose advisor from directory)</option>
                   <option value="ADMIN_ONLY">Administrator Only (Direct administrator assignment)</option>
                 </select>
-                <p className="text-[10px] text-[#A9A59A] mt-1.5">
-                  Client Directed mode activates the advisor search directory and request submission workflow for customers.
+                <p className="text-[10px] mt-1.5 font-medium flex items-center gap-1.5">
+                  {formData.advisor_assignment_mode === 'ADMIN_ONLY' ? (
+                    <span className="text-amber-400">
+                      🔒 Administrator Only: Direct administrative assignment active. Customers cannot submit requests.
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400">
+                      🌐 Client Directed: Customers can discover advisors in My Advisor and submit requests.
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -305,12 +360,14 @@ export const SystemSettings = () => {
                 <label className="block text-xs font-semibold text-[#A9A59A] mb-1.5">Visual Identity Theme</label>
                 <select
                   value={formData.theme_mode}
-                  onChange={(e) => handleInputChange('theme_mode', e.target.value)}
+                  onChange={(e) => {
+                    setThemeFieldTouched(true)
+                    handleInputChange('theme_mode', e.target.value)
+                  }}
                   className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-xs text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none cursor-pointer"
                 >
-                  <option value="DARK_GOLD">Dark Gold (Finora Luxury Signature)</option>
-                  <option value="OBSIDIAN">Obsidian Minimalist</option>
-                  <option value="LIGHT_CLASSIC">Light Classic Banking</option>
+                  <option value="DARK_GOLD">Dark Gold (Finora Luxury Dark)</option>
+                  <option value="LIGHT_CLASSIC">Light Classic Banking (Luxury Cream Light)</option>
                 </select>
                 <p className="text-[10px] text-[#A9A59A] mt-1.5">
                   Preserves the primary luxury palette across all high-net-worth client interfaces.

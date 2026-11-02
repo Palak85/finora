@@ -27,9 +27,12 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { customerService } from '../services/api'
+import { useSystemConfig } from '../context/SystemConfigContext'
 import { formatDate } from '../utils/formatters'
 
 export const MyAdvisor = () => {
+  const { advisorAssignmentMode } = useSystemConfig()
+  const isAdminOnlyMode = advisorAssignmentMode === 'ADMIN_ONLY'
   // Main data states
   const [advisor, setAdvisor] = useState(null)
   const [pendingRequest, setPendingRequest] = useState(null)
@@ -122,6 +125,10 @@ export const MyAdvisor = () => {
   }
 
   const handleOpenRequestModal = (adv) => {
+    if (isAdminOnlyMode) {
+      setActionError('Advisor request submissions are currently disabled by System Administration (Direct Administrator Assignment Mode Active).')
+      return
+    }
     setRequestModalAdvisor(adv)
     setRequestMessage('')
     setActionError('')
@@ -508,7 +515,9 @@ export const MyAdvisor = () => {
               My Financial Advisor
             </h3>
             <p className="text-xs text-[#A9A59A] max-w-lg mx-auto leading-relaxed">
-              You don't have a financial advisor yet. Browse our available advisors and request one to manage your financial planning.
+              {isAdminOnlyMode
+                ? "Advisors are assigned directly by platform administrators according to current governance policy. Client-directed requests are currently disabled. An advisor will be assigned to your portfolio shortly."
+                : "You don't have a financial advisor yet. Browse our available advisors and request one to manage your financial planning."}
             </p>
           </div>
 
@@ -534,9 +543,16 @@ export const MyAdvisor = () => {
         <div id="advisors-directory" className="space-y-5 pt-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#2B2A24] pb-4">
             <div>
-              <h2 className="text-lg font-bold text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#D4AF37]" /> Available Financial Advisors Directory
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#F5F1E6] font-['Space_Grotesk'] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#D4AF37]" /> Available Financial Advisors Directory
+                </h2>
+                {isAdminOnlyMode && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    Administrator Assignment Protocol
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-[#A9A59A]">
                 Select a licensed fiduciary advisor tailored to your private banking & investment objectives
               </p>
@@ -594,7 +610,7 @@ export const MyAdvisor = () => {
               {filteredAdvisors.map((adv) => {
                 const isPendingToThis = pendingRequest?.advisor_id === adv.id
                 const isAssignedToThis = advisor?.id === adv.id
-                const isActionDisabled = Boolean(advisor) || Boolean(pendingRequest)
+                const isActionDisabled = Boolean(advisor) || Boolean(pendingRequest) || isAdminOnlyMode
 
                 return (
                   <div
@@ -675,7 +691,7 @@ export const MyAdvisor = () => {
                         }`}
                       >
                         <UserCheck className="w-3.5 h-3.5" />
-                        <span>{isPendingToThis ? 'Pending' : 'Request Advisor'}</span>
+                        <span>{isPendingToThis ? 'Pending' : isAdminOnlyMode ? 'Admin Assigned' : 'Request Advisor'}</span>
                       </button>
                     </div>
                   </div>

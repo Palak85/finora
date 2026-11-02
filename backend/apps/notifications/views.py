@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Notification
 from .serializers import NotificationSerializer
+from apps.users.models import AdvisorAssignment
 
 class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -101,6 +102,13 @@ class SendAdvisorRecommendationView(APIView):
                 'success': False,
                 'message': 'Target client not found.'
             }, status=status.HTTP_404_NOT_FOUND)
+
+        if advisor.role == 'FINANCIAL_ADVISOR':
+            if not AdvisorAssignment.objects.filter(advisor=advisor, customer=target_user).exists():
+                return Response({
+                    'success': False,
+                    'message': 'Security Protection: You are not authorized to issue recommendations to clients not assigned to you.'
+                }, status=status.HTTP_403_FORBIDDEN)
 
         notification = Notification.objects.create(
             user=target_user,

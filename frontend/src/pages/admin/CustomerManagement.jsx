@@ -55,6 +55,13 @@ export const CustomerManagement = () => {
   // Advisor & Request History Modal
   const [historyModalCustomer, setHistoryModalCustomer] = useState(null)
 
+  // Direct Assign Advisor Modal
+  const [assignModalCustomer, setAssignModalCustomer] = useState(null)
+  const [selectedAdvisorId, setSelectedAdvisorId] = useState('')
+  const [availableAdvisorsList, setAvailableAdvisorsList] = useState([])
+  const [loadingAdvisorsList, setLoadingAdvisorsList] = useState(false)
+  const [assignSubmitting, setAssignSubmitting] = useState(false)
+
   // Toggle Status Modal
   const [toggleCustomer, setToggleCustomer] = useState(null)
   const [toggleSubmitting, setToggleSubmitting] = useState(false)
@@ -113,6 +120,48 @@ export const CustomerManagement = () => {
       setActionError(err.response?.data?.message || 'Failed to register wealth client.')
     } finally {
       setAddSubmitting(false)
+    }
+  }
+
+
+  const handleOpenAssignModal = async (customer) => {
+    setAssignModalCustomer(customer)
+    setSelectedAdvisorId(customer.assigned_advisor?.id ? String(customer.assigned_advisor.id) : '')
+    setLoadingAdvisorsList(true)
+    try {
+      const res = await adminService.getAdvisors()
+      if (res.data?.success) {
+        setAvailableAdvisorsList(res.data.data.filter((a) => a.is_active) || [])
+      }
+    } catch (err) {
+      console.error('Failed to load active advisors:', err)
+    } finally {
+      setLoadingAdvisorsList(false)
+    }
+  }
+
+  const handleConfirmAssignAdvisor = async (e) => {
+    if (e) e.preventDefault()
+    if (!assignModalCustomer) return
+    setAssignSubmitting(true)
+    setActionError('')
+    setActionSuccess('')
+    try {
+      const res = await adminService.assignCustomerAdvisor(assignModalCustomer.id, {
+        advisor_id: selectedAdvisorId || null
+      })
+      if (res.data?.success) {
+        setActionSuccess(res.data.message || 'Advisor assignment updated successfully.')
+        setAssignModalCustomer(null)
+        if (historyModalCustomer && historyModalCustomer.id === assignModalCustomer.id) {
+          setHistoryModalCustomer(null)
+        }
+        await fetchCustomers()
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.message || 'Failed to update advisor assignment.')
+    } finally {
+      setAssignSubmitting(false)
     }
   }
 
@@ -483,6 +532,15 @@ export const CustomerManagement = () => {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Direct Assign / Change Advisor */}
+                          <button
+                            onClick={() => handleOpenAssignModal(c)}
+                            title="Direct Assign / Reassign Advisor"
+                            className="p-1.5 rounded-lg bg-[#21201B] hover:bg-[#2B2A24] text-indigo-400 hover:text-indigo-200 transition-colors cursor-pointer"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Advisor / History Inspection */}
                           <button
                             onClick={() => setHistoryModalCustomer(c)}
@@ -793,6 +851,90 @@ export const CustomerManagement = () => {
                 className="w-full py-2.5 rounded-xl border border-[#2B2A24] text-xs font-bold text-[#F5F1E6] hover:bg-[#21201B] cursor-pointer"
               >
                 Close Telemetry Inspection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {/* ================= MODAL: DIRECT ASSIGN ADVISOR ================= */}
+      {assignModalCustomer && (
+        <div className="fixed inset-0 z-50 bg-[#0B0B0A]/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#2B2A24] pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#F5F1E6] font-['Space_Grotesk']">
+                    Assign Financial Advisor
+                  </h3>
+                  <p className="text-xs text-[#A9A59A]">Client: {assignModalCustomer.full_name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAssignModalCustomer(null)}
+                className="text-[#A9A59A] hover:text-[#F5F1E6] p-1.5 rounded-lg hover:bg-[#21201B] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-3 bg-[#0B0B0A] border border-[#2B2A24] rounded-2xl space-y-1">
+                <div className="text-[10px] uppercase font-bold text-[#A9A59A]">Current Advisor Status</div>
+                <div className="font-bold text-[#F5F1E6]">
+                  {assignModalCustomer.assigned_advisor
+                    ? `${assignModalCustomer.assigned_advisor.full_name} (${assignModalCustomer.assigned_advisor.specialization || 'Wealth Management'})`
+                    : 'No Financial Advisor Assigned'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A9A59A] mb-1.5">
+                  Select Financial Advisor
+                </label>
+                {loadingAdvisorsList ? (
+                  <div className="p-3 text-center text-[#A9A59A] bg-[#0B0B0A] rounded-xl border border-[#2B2A24]">
+                    Loading active advisors...
+                  </div>
+                ) : (
+                  <select
+                    value={selectedAdvisorId}
+                    onChange={(e) => setSelectedAdvisorId(e.target.value)}
+                    className="w-full bg-[#0B0B0A] border border-[#2B2A24] text-xs text-[#F5F1E6] rounded-xl px-3.5 py-2.5 focus:border-[#D4AF37] focus:outline-none cursor-pointer"
+                  >
+                    <option value="" className="bg-[#171714] text-[#A9A59A]">-- Unassign / No Advisor --</option>
+                    {availableAdvisorsList.map((adv) => (
+                      <option key={adv.id} value={adv.id} className="bg-[#171714] text-[#F5F1E6]">
+                        {adv.full_name} — {adv.specialization || 'Wealth Management'} ({adv.assigned_customer_count || 0} clients)
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <p className="text-[10px] text-[#A9A59A] mt-1.5">
+                  Selecting an advisor immediately grants them fiduciary surveillance over this customer and dispatches an assignment alert.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#2B2A24] flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setAssignModalCustomer(null)}
+                className="px-4 py-2 bg-[#21201B] hover:bg-[#2B2A24] text-[#F5F1E6] text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAssignAdvisor}
+                disabled={assignSubmitting}
+                className="px-5 py-2 bg-gradient-to-r from-[#D4AF37] to-[#9A7B1C] text-[#0B0B0A] text-xs font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {assignSubmitting ? 'Saving...' : 'Confirm Assignment'}
               </button>
             </div>
           </div>

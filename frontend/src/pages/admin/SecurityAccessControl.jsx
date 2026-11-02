@@ -282,27 +282,27 @@ export const SecurityAccessControl = () => {
             <div className="bg-[#171714] border border-[#2B2A24] rounded-3xl overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#0B0B0A] border-b border-[#2B2A24] text-[10px] uppercase font-bold text-[#A9A59A] tracking-wider">
+                  <thead className="bg-[#0B0B0A] border-b border-[#2B2A24] text-[10px] uppercase font-bold text-[#6E675F] dark:text-[#A9A59A] tracking-wider">
                     <tr>
                       <th className="py-3.5 px-4">System Module</th>
-                      <th className="py-3.5 px-4 text-emerald-400">Wealth Client (Customer)</th>
-                      <th className="py-3.5 px-4 text-indigo-300">Financial Advisor</th>
-                      <th className="py-3.5 px-4 text-[#D4AF37]">System Administrator</th>
+                      <th className="py-3.5 px-4 text-emerald-800 dark:text-emerald-400">Wealth Client (Customer)</th>
+                      <th className="py-3.5 px-4 text-indigo-800 dark:text-indigo-300">Financial Advisor</th>
+                      <th className="py-3.5 px-4 text-[#8B6508] dark:text-[#D4AF37]">System Administrator</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2B2A24]/60">
                     {matrix.map((row, idx) => (
                       <tr key={idx} className="hover:bg-[#1c1b17] transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-[#F5F1E6]">
+                        <td className="py-3.5 px-4 font-bold text-[#1F1C18] dark:text-[#F5F1E6]">
                           {row.module}
                         </td>
-                        <td className="py-3.5 px-4 text-emerald-300 font-medium">
+                        <td className="py-3.5 px-4 text-emerald-800 dark:text-emerald-300 font-semibold">
                           {row.customer}
                         </td>
-                        <td className="py-3.5 px-4 text-indigo-200 font-medium">
+                        <td className="py-3.5 px-4 text-indigo-800 dark:text-indigo-200 font-semibold">
                           {row.advisor}
                         </td>
-                        <td className="py-3.5 px-4 text-[#FFF0B3] font-medium">
+                        <td className="py-3.5 px-4 text-[#8B6508] dark:text-[#FFF0B3] font-semibold">
                           {row.admin}
                         </td>
                       </tr>
@@ -337,17 +337,17 @@ export const SecurityAccessControl = () => {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2.5">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#D4AF37]/15 text-[#8B6508] dark:text-[#D4AF37] border border-[#D4AF37]/30">
                           {log.action}
                         </span>
-                        <span className="font-semibold text-[#F5F1E6]">{log.user_email}</span>
+                        <span className="font-semibold text-[#1F1C18] dark:text-[#F5F1E6]">{log.user_email}</span>
                       </div>
-                      <div className="text-[11px] text-[#A9A59A]">
+                      <div className="text-[11px] text-[#6E675F] dark:text-[#A9A59A]">
                         {log.details?.description || JSON.stringify(log.details)}
                       </div>
                     </div>
 
-                    <div className="text-right text-[11px] text-[#A9A59A] shrink-0 font-mono">
+                    <div className="text-right text-[11px] text-[#6E675F] dark:text-[#A9A59A] shrink-0 font-mono">
                       <div>IP: {log.ip_address}</div>
                       <div>{formatDate(log.timestamp)}</div>
                     </div>

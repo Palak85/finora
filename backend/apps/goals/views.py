@@ -10,6 +10,7 @@ from apps.users.permissions import IsOwnerOrAdvisorOrAdmin
 from apps.accounts.models import Account
 from apps.transactions.models import Transaction
 from apps.notifications.models import Notification
+from apps.users.models import AdvisorAssignment
 
 class GoalListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -17,11 +18,19 @@ class GoalListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
                 return Goal.objects.filter(user_id=user_id)
             return Goal.objects.all()
+        elif user.role == 'FINANCIAL_ADVISOR':
+            user_id = self.request.query_params.get('user_id')
+            if user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists():
+                    return Goal.objects.filter(user_id=user_id)
+                return Goal.objects.none()
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Goal.objects.filter(user_id__in=assigned_ids)
         return Goal.objects.filter(user=user)
 
     def list(self, request, *args, **kwargs):
@@ -103,8 +112,11 @@ class GoalDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             return Goal.objects.all()
+        elif user.role == 'FINANCIAL_ADVISOR':
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Goal.objects.filter(user_id__in=assigned_ids)
         return Goal.objects.filter(user=user)
 
     def update(self, request, *args, **kwargs):

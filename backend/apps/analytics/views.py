@@ -10,6 +10,7 @@ from apps.transactions.models import Transaction
 from apps.budgets.models import Budget
 from apps.investments.models import Investment
 from apps.accounts.models import Account
+from apps.users.models import AdvisorAssignment
 
 User = get_user_model()
 
@@ -52,8 +53,15 @@ class AnalyticsView(APIView):
                 users_scope = User.objects.filter(id=target_user_id)
             else:
                 users_scope = User.objects.exclude(role='ADMINISTRATOR')
-        elif user.role == 'FINANCIAL_ADVISOR' and target_user_id:
-            users_scope = User.objects.filter(id=target_user_id)
+        elif user.role == 'FINANCIAL_ADVISOR':
+            if target_user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=target_user_id).exists():
+                    users_scope = User.objects.filter(id=target_user_id)
+                else:
+                    users_scope = User.objects.none()
+            else:
+                assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+                users_scope = User.objects.filter(id__in=assigned_ids)
         else:
             users_scope = User.objects.filter(id=user.id)
 

@@ -157,17 +157,27 @@ export const AdvisorDashboard = () => {
 
   useEffect(() => {
     setLoading(true)
-    authService.getUsers()
+    advisorService.getAssignedClients()
       .then(res => {
         if (res.data?.success) {
-          const customers = res.data.data.filter(u => u.role === 'CUSTOMER')
-          setUsers(customers)
-          if (customers.length > 0) {
-            handleSelectClient(customers[0])
+          const clients = res.data.data || []
+          setUsers(clients)
+          if (clients.length > 0) {
+            handleSelectClient(clients[0])
+          } else {
+            setSelectedUser(null)
+            setClientData(null)
+            setPortfolioData(null)
+            setClientGoals([])
+            setClientBudgets([])
+            setClientInvestments([])
+            setClientAccounts([])
+            setClientTransactions([])
+            setClientAnalytics(null)
           }
         }
       })
-      .catch((err) => console.error(err))
+      .catch((err) => console.error('Failed to load assigned clients:', err))
       .finally(() => setLoading(false))
     loadAdvisorRequests()
   }, [])
@@ -695,7 +705,22 @@ export const AdvisorDashboard = () => {
               </div>
 
               <div className="divide-y divide-[#2B2A24]">
-                {users.map((u) => (
+                {users.length === 0 ? (
+                  <div className="py-8 text-center text-[#A9A59A]">
+                    <Users className="w-10 h-10 mx-auto text-[#A9A59A]/40 mb-2" />
+                    <p className="text-sm font-bold text-[#F5F1E6]">No Assigned Clients Yet</p>
+                    <p className="text-xs text-[#A9A59A] mt-1 max-w-md mx-auto">
+                      You do not have any active client assignments yet. Check incoming customer requests to review inquiries and onboard new clients.
+                    </p>
+                    <button
+                      onClick={() => navigate('/advisor/requests')}
+                      className="mt-4 px-4 py-2 bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0B0A] rounded-xl text-xs font-bold transition-all"
+                    >
+                      Review Customer Requests
+                    </button>
+                  </div>
+                ) : (
+                  users.map((u) => (
                   <div key={u.id} className="py-4 flex items-center justify-between hover:bg-[#21201B]/50 px-2 rounded-xl transition-all">
                     <div>
                       <p className="text-sm font-bold text-[#F5F1E6]">{u.full_name}</p>
@@ -718,7 +743,7 @@ export const AdvisorDashboard = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                )))}
               </div>
             </div>
 
@@ -792,7 +817,26 @@ export const AdvisorDashboard = () => {
             </div>
 
             <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
-              {filteredClients.map((u) => {
+              {filteredClients.length === 0 ? (
+                <div className="py-8 px-2 text-center text-[#A9A59A]">
+                  <Users className="w-8 h-8 mx-auto text-[#A9A59A]/40 mb-2" />
+                  <p className="text-xs font-semibold text-[#F5F1E6]">No Clients Found</p>
+                  <p className="text-[10px] text-[#A9A59A] mt-1">
+                    {users.length === 0
+                      ? "You do not have any assigned clients yet."
+                      : "No clients match your search filter."}
+                  </p>
+                  {users.length === 0 && (
+                    <button
+                      onClick={() => navigate('/advisor/requests')}
+                      className="mt-3 px-3 py-1.5 bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] rounded-xl text-[10px] font-bold"
+                    >
+                      Check Requests
+                    </button>
+                  )}
+                </div>
+              ) : (
+                filteredClients.map((u) => {
                 const isSelected = selectedUser?.id === u.id
                 const initial = (u.full_name || 'U').charAt(0).toUpperCase()
                 return (
@@ -827,7 +871,7 @@ export const AdvisorDashboard = () => {
                     )}
                   </button>
                 )
-              })}
+              }))}
             </div>
 
             {selectedUser && (

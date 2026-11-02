@@ -9,6 +9,7 @@ from .serializers import AccountSerializer
 from apps.users.permissions import IsOwnerOrAdvisorOrAdmin
 from apps.transactions.models import Transaction
 from apps.notifications.models import Notification
+from apps.users.models import AdvisorAssignment
 
 class AccountListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -16,11 +17,19 @@ class AccountListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
                 return Account.objects.filter(user_id=user_id)
             return Account.objects.all()
+        elif user.role == 'FINANCIAL_ADVISOR':
+            user_id = self.request.query_params.get('user_id')
+            if user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists():
+                    return Account.objects.filter(user_id=user_id)
+                return Account.objects.none()
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Account.objects.filter(user_id__in=assigned_ids)
         return Account.objects.filter(user=user)
 
     def list(self, request, *args, **kwargs):
@@ -58,8 +67,11 @@ class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             return Account.objects.all()
+        elif user.role == 'FINANCIAL_ADVISOR':
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Account.objects.filter(user_id__in=assigned_ids)
         return Account.objects.filter(user=user)
 
     def retrieve(self, request, *args, **kwargs):

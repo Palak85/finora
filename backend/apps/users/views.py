@@ -1,3 +1,19 @@
+def normalize_advisor_mode(mode):
+    if not mode:
+        return 'CLIENT_REQUEST'
+    m = str(mode).upper()
+    if 'ADMIN' in m:
+        return 'ADMIN_ONLY'
+    return 'CLIENT_REQUEST'
+
+def normalize_theme_mode(theme_mode):
+    if not theme_mode:
+        return 'DARK_GOLD'
+    m = str(theme_mode).strip().upper()
+    if 'LIGHT' in m or m == 'LIGHT_CLASSIC':
+        return 'LIGHT_CLASSIC'
+    return 'DARK_GOLD'
+
 from rest_framework import status, permissions, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -302,7 +318,13 @@ class UserListView(generics.ListCreateAPIView):
     serializer_class = UserSerializer
 
     def get_queryset(self):
-        return User.objects.all().order_by('-date_joined')
+        user = self.request.user
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
+            return User.objects.all().order_by('-date_joined')
+        elif user.role == 'FINANCIAL_ADVISOR':
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return User.objects.filter(id__in=assigned_ids).order_by('-date_joined')
+        return User.objects.filter(id=user.id)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -679,8 +701,11 @@ class AvailableAdvisorsView(APIView):
                 'has_pending_request': adv.id == pending_request_advisor_id,
             })
 
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        mode = normalize_advisor_mode(config.advisor_assignment_mode)
         return Response({
             'success': True,
+            'advisor_assignment_mode': mode,
             'count': len(data),
             'data': data
         })
@@ -695,6 +720,9 @@ class CustomerAdvisorView(APIView):
                 'success': False,
                 'message': 'Access restricted to customer accounts only.'
             }, status=status.HTTP_403_FORBIDDEN)
+
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        advisor_mode = normalize_advisor_mode(config.advisor_assignment_mode)
 
         # 1. Fetch request history for customer
         history_qs = AdvisorRequest.objects.filter(customer=request.user).select_related('advisor').order_by('-created_at')[:10]
@@ -737,6 +765,7 @@ class CustomerAdvisorView(APIView):
             return Response({
                 'success': True,
                 'assigned': True,
+                'advisor_assignment_mode': advisor_mode,
                 'has_pending_request': False,
                 'pending_request': None,
                 'data': data,
@@ -762,6 +791,7 @@ class CustomerAdvisorView(APIView):
             return Response({
                 'success': True,
                 'assigned': False,
+                'advisor_assignment_mode': advisor_mode,
                 'has_pending_request': True,
                 'pending_request': pending_data,
                 'data': None,
@@ -773,11 +803,12 @@ class CustomerAdvisorView(APIView):
         return Response({
             'success': True,
             'assigned': False,
+            'advisor_assignment_mode': advisor_mode,
             'has_pending_request': False,
             'pending_request': None,
             'data': None,
             'message': 'No Advisor Assigned',
-            'description': "You don't have a financial advisor yet. Browse our available advisors and request one to manage your financial planning.",
+            'description': "Advisors are assigned directly by platform administrators. Client-directed requests are currently disabled." if advisor_mode == 'ADMIN_ONLY' else "You don't have a financial advisor yet. Browse our available advisors and request one to manage your financial planning.",
             'request_history': request_history
         })
 
@@ -790,6 +821,13 @@ class CustomerAdvisorRequestCreateView(APIView):
             return Response({
                 'success': False,
                 'message': 'Access restricted to customer accounts only.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        if normalize_advisor_mode(config.advisor_assignment_mode) == 'ADMIN_ONLY':
+            return Response({
+                'success': False,
+                'message': 'Advisor request submissions are currently disabled by System Administration. The platform is operating in Direct Administrator Assignment mode.'
             }, status=status.HTTP_403_FORBIDDEN)
 
         advisor_id = request.data.get('advisor_id')
@@ -823,6 +861,13 @@ class CustomerAdvisorRequestCreateView(APIView):
 
         msg = request.data.get('message', '').strip()
 
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        if normalize_advisor_mode(config.advisor_assignment_mode) == 'ADMIN_ONLY':
+            return Response({
+                'success': False,
+                'message': 'Advisor request submissions are currently disabled by System Administration. The platform is operating in Direct Administrator Assignment mode.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
         with db_transaction.atomic():
             req_obj = AdvisorRequest.objects.create(
                 customer=request.user,
@@ -832,13 +877,14 @@ class CustomerAdvisorRequestCreateView(APIView):
                 request_date=timezone.now()
             )
 
-            # Notification to Financial Advisor
-            Notification.objects.create(
-                user=advisor,
-                title='🤝 New Customer Advisor Request',
-                message=f"New customer advisor request received from {request.user.full_name} ({request.user.email}).",
-                notification_type='Advisor'
-            )
+            # Notification to Financial Advisor (conditioned on email_alerts_enabled)
+            if config.email_alerts_enabled:
+                Notification.objects.create(
+                    user=advisor,
+                    title='🤝 New Customer Advisor Request',
+                    message=f"New customer advisor request received from {request.user.full_name} ({request.user.email}).",
+                    notification_type='Advisor'
+                )
 
         return Response({
             'success': True,
@@ -879,6 +925,15 @@ class CustomerAdvisorRequestCancelView(APIView):
         req_obj.status = 'CANCELLED'
         req_obj.cancelled_at = timezone.now()
         req_obj.save()
+
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        if config.email_alerts_enabled:
+            Notification.objects.create(
+                user=req_obj.advisor,
+                title='ℹ️ Customer Advisor Request Cancelled',
+                message=f"Customer {request.user.full_name} cancelled their advisor request.",
+                notification_type='Advisor'
+            )
 
         return Response({
             'success': True,
@@ -1001,13 +1056,15 @@ class AdvisorRequestAcceptView(APIView):
                 cancelled_at=timezone.now()
             )
 
-            # Notification to customer
-            Notification.objects.create(
-                user=req_obj.customer,
-                title='🎉 Financial Advisor Request Accepted',
-                message=f"Your financial advisor request has been accepted. {request.user.full_name} is now your assigned Wealth Advisor.",
-                notification_type='Advisor'
-            )
+            # Notification to customer (conditioned on email_alerts_enabled)
+            config, _ = SystemConfiguration.objects.get_or_create(id=1)
+            if config.email_alerts_enabled:
+                Notification.objects.create(
+                    user=req_obj.customer,
+                    title='🎉 Financial Advisor Request Accepted',
+                    message=f"Your financial advisor request has been accepted. {request.user.full_name} is now your assigned Wealth Advisor.",
+                    notification_type='Advisor'
+                )
 
         return Response({
             'success': True,
@@ -1047,13 +1104,15 @@ class AdvisorRequestRejectView(APIView):
             req_obj.rejection_reason = reason
             req_obj.save()
 
-            # Notification to customer
-            Notification.objects.create(
-                user=req_obj.customer,
-                title='⚠️ Financial Advisor Request Declined',
-                message="Your financial advisor request has been rejected. You can choose another available advisor.",
-                notification_type='Advisor'
-            )
+            # Notification to customer (conditioned on email_alerts_enabled)
+            config, _ = SystemConfiguration.objects.get_or_create(id=1)
+            if config.email_alerts_enabled:
+                Notification.objects.create(
+                    user=req_obj.customer,
+                    title='⚠️ Financial Advisor Request Declined',
+                    message="Your financial advisor request has been rejected. You can choose another available advisor.",
+                    notification_type='Advisor'
+                )
 
         return Response({
             'success': True,
@@ -1085,6 +1144,7 @@ class AdvisorAssignedClientsView(APIView):
                 'assigned_date': a.assigned_date,
                 'specialization': a.specialization,
                 'status': 'Active' if c.is_active else 'Inactive',
+                'role': c.role,
             })
 
         return Response({
@@ -1399,6 +1459,110 @@ class AdminCustomerToggleStatusView(APIView):
             'status': status_label
         })
 
+class AdminCustomerAssignAdvisorView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, id):
+        try:
+            customer = User.objects.get(id=id, role='CUSTOMER')
+        except User.DoesNotExist:
+            return Response({'success': False, 'message': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        advisor_id = request.data.get('advisor_id')
+
+        # If advisor_id is empty, None or 'unassign', remove current advisor assignment
+        if not advisor_id or str(advisor_id).lower() in ['none', 'unassign', '0', '']:
+            AdvisorAssignment.objects.filter(customer=customer).delete()
+            AuditLog.objects.create(
+                user=request.user,
+                action='ADMIN_UNASSIGNED_ADVISOR',
+                ip_address=get_client_ip(request),
+                details={
+                    'module': 'Customer Management',
+                    'customer_id': customer.id,
+                    'customer_email': customer.email,
+                    'description': f"Admin unassigned financial advisor from client {customer.full_name} ({customer.email})."
+                }
+            )
+            return Response({
+                'success': True,
+                'message': f"Financial advisor successfully unassigned from {customer.full_name}.",
+                'assigned_advisor': None
+            })
+
+        try:
+            advisor = User.objects.get(id=advisor_id, role='FINANCIAL_ADVISOR', is_active=True)
+        except User.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Selected financial advisor was not found or is currently inactive.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        with db_transaction.atomic():
+            assignment, _ = AdvisorAssignment.objects.update_or_create(
+                customer=customer,
+                defaults={
+                    'advisor': advisor,
+                    'assigned_date': timezone.now(),
+                    'specialization': advisor.specialization or 'Wealth Management',
+                    'designation': 'Financial Advisor',
+                    'availability_status': 'Active',
+                    'notes': f"Direct administrative assignment by {request.user.full_name}."
+                }
+            )
+
+            # Clear or accept any pending requests
+            AdvisorRequest.objects.filter(customer=customer, status='PENDING').update(
+                status='ACCEPTED',
+                accepted_at=timezone.now(),
+                advisor=advisor
+            )
+
+            # Notifications if email_alerts_enabled
+            config, _ = SystemConfiguration.objects.get_or_create(id=1)
+            if config.email_alerts_enabled:
+                Notification.objects.create(
+                    user=customer,
+                    title='🎉 Dedicated Wealth Advisor Assigned',
+                    message=f"{advisor.full_name} has been assigned as your dedicated wealth advisor by system administration.",
+                    notification_type='Advisor'
+                )
+                Notification.objects.create(
+                    user=advisor,
+                    title='📋 New Client Portfolio Assigned',
+                    message=f"{customer.full_name} ({customer.email}) has been assigned to your advisory portfolio by system administration.",
+                    notification_type='Advisor'
+                )
+
+            # Audit Log
+            AuditLog.objects.create(
+                user=request.user,
+                action='ADMIN_ASSIGNED_ADVISOR',
+                ip_address=get_client_ip(request),
+                details={
+                    'module': 'Customer Management',
+                    'customer_id': customer.id,
+                    'customer_email': customer.email,
+                    'advisor_id': advisor.id,
+                    'advisor_name': advisor.full_name,
+                    'description': f"Admin directly assigned advisor {advisor.full_name} to client {customer.full_name}."
+                }
+            )
+
+        return Response({
+            'success': True,
+            'message': f"Advisor {advisor.full_name} successfully assigned to {customer.full_name}.",
+            'assigned_advisor': {
+                'id': advisor.id,
+                'full_name': advisor.full_name,
+                'email': advisor.email,
+                'specialization': advisor.specialization or 'Wealth Management',
+                'assigned_date': assignment.assigned_date,
+                'is_active': advisor.is_active,
+            }
+        })
+
+
 
 # =========================================================================
 # SYSTEM ADMINISTRATOR: SECURITY & ACCESS CONTROL APIS
@@ -1420,7 +1584,7 @@ class AdminSecurityView(APIView):
                 'users_count': admin_count,
                 'permissions': [
                     'Admin Console Telemetry Access',
-                    'User Management (Create, Edit, Toggle, Delete)',
+                    'User Management (Delete Accounts Only)',
                     'Advisor Management (Profile, Clients, Status)',
                     'Customer Management (Assignments, Request History)',
                     'Full Audit Logs Inspection',
@@ -1465,7 +1629,7 @@ class AdminSecurityView(APIView):
             {'module': 'Budgets & Expense Tracking', 'customer': 'Full Operations', 'advisor': 'Compliance Tracking Only', 'admin': 'Read-Only Oversight'},
             {'module': 'Investments Portfolio', 'customer': 'Personal Holdings', 'advisor': 'AUM Multi-Asset Audit', 'admin': 'Platform AUM Metrics'},
             {'module': 'Advisor Requests & Directory', 'customer': 'Browse & Submit', 'advisor': 'Evaluate, Accept & Reject', 'admin': 'Assignment Monitoring'},
-            {'module': 'User Management & Roles', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Full Administrative Control'},
+            {'module': 'User Management & Roles', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Account Deletion Only'},
             {'module': 'Audit Logs & Governance', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Full Immutable Audit Access'},
             {'module': 'System Settings & Config', 'customer': 'No Access', 'advisor': 'No Access', 'admin': 'Full Configuration Control'},
         ]
@@ -1528,8 +1692,8 @@ class AdminSystemSettingsView(APIView):
                 'default_currency': config.default_currency,
                 'timezone_pref': config.timezone_pref,
                 'date_format': config.date_format,
-                'theme_mode': config.theme_mode,
-                'advisor_assignment_mode': config.advisor_assignment_mode,
+                'theme_mode': normalize_theme_mode(config.theme_mode),
+                'advisor_assignment_mode': normalize_advisor_mode(config.advisor_assignment_mode),
                 'allow_customer_registration': config.allow_customer_registration,
                 'maintenance_mode': config.maintenance_mode,
                 'email_alerts_enabled': config.email_alerts_enabled,
@@ -1554,9 +1718,9 @@ class AdminSystemSettingsView(APIView):
         if 'date_format' in data:
             config.date_format = str(data['date_format']).strip()
         if 'theme_mode' in data:
-            config.theme_mode = str(data['theme_mode']).strip()
+            config.theme_mode = normalize_theme_mode(data['theme_mode'])
         if 'advisor_assignment_mode' in data:
-            config.advisor_assignment_mode = str(data['advisor_assignment_mode']).strip()
+            config.advisor_assignment_mode = normalize_advisor_mode(data['advisor_assignment_mode'])
         if 'allow_customer_registration' in data:
             config.allow_customer_registration = bool(data['allow_customer_registration'])
         if 'maintenance_mode' in data:
@@ -1590,8 +1754,8 @@ class AdminSystemSettingsView(APIView):
                 'default_currency': config.default_currency,
                 'timezone_pref': config.timezone_pref,
                 'date_format': config.date_format,
-                'theme_mode': config.theme_mode,
-                'advisor_assignment_mode': config.advisor_assignment_mode,
+                'theme_mode': normalize_theme_mode(config.theme_mode),
+                'advisor_assignment_mode': normalize_advisor_mode(config.advisor_assignment_mode),
                 'allow_customer_registration': config.allow_customer_registration,
                 'maintenance_mode': config.maintenance_mode,
                 'email_alerts_enabled': config.email_alerts_enabled,
@@ -1601,3 +1765,29 @@ class AdminSystemSettingsView(APIView):
             }
         })
 
+
+
+class PublicSystemSettingsView(APIView):
+    """
+    Public/Authenticated configuration endpoint accessible by all platform roles
+    (Customers, Advisors, Administrators) to synchronize platform presentation:
+    Currency, Date Format, Visual Theme, Application Name, Maintenance Mode, and Registration Status.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        config, _ = SystemConfiguration.objects.get_or_create(id=1)
+        return Response({
+            'success': True,
+            'data': {
+                'app_name': config.app_name,
+                'app_description': config.app_description,
+                'default_currency': config.default_currency,
+                'timezone_pref': config.timezone_pref,
+                'date_format': config.date_format,
+                'theme_mode': normalize_theme_mode(config.theme_mode),
+                'advisor_assignment_mode': normalize_advisor_mode(config.advisor_assignment_mode),
+                'allow_customer_registration': config.allow_customer_registration,
+                'maintenance_mode': config.maintenance_mode,
+            }
+        })

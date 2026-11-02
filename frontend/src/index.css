@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
@@ -50,6 +51,11 @@
   background: rgba(23, 23, 20, 0.85);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* Audit Log Description Base */
+.audit-log-desc {
+  color: #F5F1E6;
 }
 
 /* ------------------------------------------------------------- */
@@ -133,9 +139,71 @@
 
 /* 6. Text Colors */
 .light .text-\[\#F5F1E6\] { color: #1F1C18 !important; }
+.light .text-\[\#F5F1E6\]\/90 { color: #1F1C18 !important; }
+.light .text-\[\#F5F1E6\]\/80 { color: #2D2820 !important; }
+.light .text-\[\#F5F1E6\]\/70 { color: #3A352D !important; }
 .light .text-\[\#A9A59A\] { color: #6E675F !important; }
 .light .text-\[\#D4AF37\] { color: #B8860B !important; }
+.light .text-\[\#FFF0B3\] { color: #8B6508 !important; }
 .light .placeholder-\[\#A9A59A\]::placeholder { color: #9E978C !important; }
+.light .placeholder-\[\#A9A59A\]\/60::placeholder { color: #7A746B !important; }
+
+/* Explicit Audit Log High-Contrast Description */
+.light .audit-log-desc {
+  color: #1F1C18 !important;
+}
+
+/* High Contrast Light-Mode Action Badge Overrides */
+.light .text-amber-900,
+.light .text-amber-800,
+.light .text-amber-700,
+.light .text-amber-400,
+.light .text-amber-300 {
+  color: #78350F !important;
+}
+.light .text-emerald-800,
+.light .text-emerald-700,
+.light .text-emerald-400,
+.light .text-emerald-300 {
+  color: #065F46 !important;
+}
+.light .text-blue-800,
+.light .text-blue-700,
+.light .text-blue-400,
+.light .text-blue-300 {
+  color: #1E40AF !important;
+}
+.light .text-red-800,
+.light .text-red-700,
+.light .text-red-400,
+.light .text-red-300 {
+  color: #991B1B !important;
+}
+.light .text-purple-800,
+.light .text-purple-700,
+.light .text-purple-400,
+.light .text-purple-300 {
+  color: #5B21B6 !important;
+}
+.light .text-indigo-800,
+.light .text-indigo-700,
+.light .text-indigo-400,
+.light .text-indigo-300 {
+  color: #3730A3 !important;
+}
+.light .text-teal-800,
+.light .text-teal-700,
+.light .text-teal-400,
+.light .text-teal-300 {
+  color: #115E59 !important;
+}
+.light .text-stone-900,
+.light .text-stone-800,
+.light .text-stone-300,
+.light .text-zinc-400,
+.light .text-zinc-300 {
+  color: #1C1917 !important;
+}
 
 /* 7. Form inputs, selects, textareas & options */
 .light input,
@@ -181,6 +249,7 @@
 .light .bg-\[\#D4AF37\]\/10 { background-color: rgba(184, 134, 11, 0.12) !important; }
 .light .bg-\[\#D4AF37\]\/15 { background-color: rgba(184, 134, 11, 0.16) !important; }
 .light .bg-\[\#D4AF37\]\/20 { background-color: rgba(184, 134, 11, 0.22) !important; }
+.light .bg-zinc-700\/30 { background-color: #EAE5D9 !important; border-color: #D3CAB8 !important; }
 
 /* 10. Custom Scrollbars in Light Mode */
 .light ::-webkit-scrollbar-track {

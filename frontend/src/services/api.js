@@ -107,6 +107,7 @@ export const adminService = {
   getCustomerDetail: (id) => api.get(`/admin/customers/${id}/`),
   updateCustomer: (id, data) => api.patch(`/admin/customers/${id}/`, data),
   toggleCustomerStatus: (id) => api.post(`/admin/customers/${id}/toggle-status/`),
+  assignCustomerAdvisor: (id, data) => api.post(`/admin/customers/${id}/assign-advisor/`, data),
   
   // Security & Access Control
   getSecurityOverview: () => api.get('/admin/security/'),
@@ -189,4 +190,9 @@ export const reportService = {
 
 export const auditService = {
   getAuditLogs: (params) => api.get('/audit/', { params }),
+}
+
+
+export const systemService = {
+  getConfig: () => api.get('/system/config/'),
 }

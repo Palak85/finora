@@ -30,7 +30,7 @@ import {
   Pie,
   Legend
 } from 'recharts'
-import { authService, budgetService, notificationService } from '../services/api'
+import { advisorService, budgetService, notificationService } from '../services/api'
 import { formatCurrency } from '../utils/formatters'
 
 // Theme-adaptive custom tooltip
@@ -88,11 +88,10 @@ export const AdvisorBudgetsDashboard = () => {
   // 1. Fetch Client List
   useEffect(() => {
     setLoadingClients(true)
-    authService.getUsers()
+    advisorService.getAssignedClients()
       .then(res => {
         if (res.data?.success) {
-          const custs = res.data.data.filter(u => u.role === 'CUSTOMER')
-          setClients(custs)
+          setClients(res.data.data || [])
         }
       })
       .catch(err => console.error('Failed to load clients:', err))
@@ -295,7 +294,7 @@ export const AdvisorBudgetsDashboard = () => {
               className="bg-transparent text-xs font-semibold text-[#F5F1E6] focus:outline-none cursor-pointer pr-2"
             >
               <option value="" className="bg-[#171714] text-[#F5F1E6]">
-                All Monitored Clients ({clients.length})
+                All Assigned Clients ({clients.length})
               </option>
               {clients.map(c => (
                 <option key={c.id} value={c.id} className="bg-[#171714] text-[#F5F1E6]">

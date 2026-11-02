@@ -15,6 +15,7 @@ from apps.goals.serializers import GoalSerializer
 from apps.investments.models import Investment
 from apps.notifications.models import Notification
 from apps.notifications.serializers import NotificationSerializer
+from apps.users.models import AdvisorAssignment
 from apps.analytics.utils import (
     calculate_total_balance, calculate_monthly_income,
     calculate_monthly_expenses, calculate_savings_rate,
@@ -122,11 +123,18 @@ class DashboardView(APIView):
             target_user_id = request.query_params.get('user_id')
             if target_user_id:
                 try:
-                    target_user = User.objects.get(id=target_user_id)
+                    if AdvisorAssignment.objects.filter(advisor=user, customer_id=target_user_id).exists():
+                        target_user = User.objects.get(id=target_user_id)
+                    else:
+                        return Response({
+                            'success': False,
+                            'message': 'Security Protection: You are not authorized to view this client.'
+                        }, status=status.HTTP_403_FORBIDDEN)
                 except User.DoesNotExist:
                     target_user = user
             else:
-                target_user = user
+                first_assigned = AdvisorAssignment.objects.filter(advisor=user).first()
+                target_user = first_assigned.customer if first_assigned else user
         else:
             target_user = user
 

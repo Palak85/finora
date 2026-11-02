@@ -347,7 +347,7 @@ export const UserManagement = () => {
                           <select
                             value={u.role}
                             onChange={(e) => handleChangeRole(u, e.target.value)}
-                            className="bg-[#0B0B0A] border border-[#2B2A24] text-xs font-semibold rounded-xl px-2.5 py-1 text-[#D4AF37] focus:outline-none focus:border-[#D4AF37] cursor-pointer"
+                            className="bg-[#0B0B0A] border border-[#2B2A24] text-xs font-semibold rounded-xl px-2.5 py-1 text-[#8B6508] dark:text-[#D4AF37] focus:outline-none focus:border-[#D4AF37] cursor-pointer"
                           >
                             <option value="CUSTOMER">Customer</option>
                             <option value="FINANCIAL_ADVISOR">Financial Advisor</option>
@@ -361,13 +361,13 @@ export const UserManagement = () => {
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                             u.is_active
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-zinc-700/30 text-zinc-400 border border-zinc-700/50'
+                              ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30'
+                              : 'bg-zinc-700/30 text-zinc-700 dark:text-zinc-400 border border-zinc-700/50'
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              u.is_active ? 'bg-emerald-400' : 'bg-zinc-400'
+                              u.is_active ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-zinc-500 dark:bg-zinc-400'
                             }`}
                           />
                           {u.is_active ? 'Active' : 'Deactivated'}

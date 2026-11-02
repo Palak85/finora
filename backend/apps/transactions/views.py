@@ -6,6 +6,7 @@ from .models import Transaction
 from .serializers import TransactionSerializer
 from .filters import TransactionFilter
 from apps.users.permissions import IsOwnerOrAdvisorOrAdmin
+from apps.users.models import AdvisorAssignment
 
 class TransactionListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -18,11 +19,19 @@ class TransactionListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
                 return Transaction.objects.filter(user_id=user_id).select_related('account', 'user')
             return Transaction.objects.all().select_related('account', 'user')
+        elif user.role == 'FINANCIAL_ADVISOR':
+            user_id = self.request.query_params.get('user_id')
+            if user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists():
+                    return Transaction.objects.filter(user_id=user_id).select_related('account', 'user')
+                return Transaction.objects.none()
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Transaction.objects.filter(user_id__in=assigned_ids).select_related('account', 'user')
         return Transaction.objects.filter(user=user).select_related('account', 'user')
 
     def create(self, request, *args, **kwargs):
@@ -67,8 +76,11 @@ class TransactionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             return Transaction.objects.all().select_related('account', 'user')
+        elif user.role == 'FINANCIAL_ADVISOR':
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Transaction.objects.filter(user_id__in=assigned_ids).select_related('account', 'user')
         return Transaction.objects.filter(user=user).select_related('account', 'user')
 
     def retrieve(self, request, *args, **kwargs):

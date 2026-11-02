@@ -25,7 +25,10 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
+
+
 export const Sidebar = () => {
+
   const { user, logout, isAdmin, isAdvisor } = useAuth()
   const location = useLocation()
 

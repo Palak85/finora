@@ -11,6 +11,7 @@ from apps.users.permissions import IsOwnerOrAdvisorOrAdmin
 from apps.accounts.models import Account
 from apps.transactions.models import Transaction
 from apps.notifications.models import Notification
+from apps.users.models import AdvisorAssignment
 
 class InvestmentListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -18,11 +19,19 @@ class InvestmentListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
                 return Investment.objects.filter(user_id=user_id).select_related('user')
             return Investment.objects.exclude(user__role='ADMINISTRATOR').select_related('user')
+        elif user.role == 'FINANCIAL_ADVISOR':
+            user_id = self.request.query_params.get('user_id')
+            if user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists():
+                    return Investment.objects.filter(user_id=user_id).select_related('user')
+                return Investment.objects.none()
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Investment.objects.filter(user_id__in=assigned_ids).select_related('user')
         return Investment.objects.filter(user=user)
 
     def list(self, request, *args, **kwargs):
@@ -102,8 +111,11 @@ class InvestmentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             return Investment.objects.all().select_related('user')
+        elif user.role == 'FINANCIAL_ADVISOR':
+            assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+            return Investment.objects.filter(user_id__in=assigned_ids).select_related('user')
         return Investment.objects.filter(user=user)
 
     def update(self, request, *args, **kwargs):
@@ -135,12 +147,22 @@ class PortfolioSummaryView(APIView):
 
     def get(self, request):
         user = request.user
-        if user.role in ['ADMINISTRATOR', 'FINANCIAL_ADVISOR'] or user.is_superuser:
+        if user.role == 'ADMINISTRATOR' or user.is_superuser:
             user_id = request.query_params.get('user_id')
             if user_id:
                 investments = Investment.objects.filter(user_id=user_id)
             else:
                 investments = Investment.objects.exclude(user__role='ADMINISTRATOR')
+        elif user.role == 'FINANCIAL_ADVISOR':
+            user_id = request.query_params.get('user_id')
+            if user_id:
+                if AdvisorAssignment.objects.filter(advisor=user, customer_id=user_id).exists():
+                    investments = Investment.objects.filter(user_id=user_id)
+                else:
+                    investments = Investment.objects.none()
+            else:
+                assigned_ids = AdvisorAssignment.objects.filter(advisor=user).values_list('customer_id', flat=True)
+                investments = Investment.objects.filter(user_id__in=assigned_ids)
         else:
             investments = Investment.objects.filter(user=user)
 
