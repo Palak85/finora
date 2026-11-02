@@ -15,6 +15,8 @@ class AccountListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AccountSerializer
 
+
+# This function decides which accounts a user can see.
     def get_queryset(self):
         user = self.request.user
         if user.role == 'ADMINISTRATOR' or user.is_superuser:
@@ -32,6 +34,7 @@ class AccountListCreateView(generics.ListCreateAPIView):
             return Account.objects.filter(user_id__in=assigned_ids)
         return Account.objects.filter(user=user)
 
+# This function displays all accounts available to the logged-in user.
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -40,6 +43,7 @@ class AccountListCreateView(generics.ListCreateAPIView):
             'data': serializer.data
         })
 
+# This function creates a new bank account.
     def create(self, request, *args, **kwargs):
         if request.user.role == 'ADMINISTRATOR':
             return Response({
@@ -167,7 +171,7 @@ class AccountTransferView(APIView):
                 'message': f'Insufficient balance in {from_acc.account_name}. Available: ₹{from_acc.balance}, Required: ₹{amount}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        with db_transaction.atomic():
+        with db_transaction.atomic():  # type: ignore
             txn_date = request.data.get('date') or timezone.now().date()
             # Outgoing transaction on from_account (Transaction.save automatically deducts amount)
             Transaction.objects.create(

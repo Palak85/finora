@@ -35,7 +35,7 @@ class NotificationMarkReadView(APIView):
                 'message': 'Notification marked as read.',
                 'data': NotificationSerializer(notification).data
             })
-        except Notification.DoesNotExist:
+        except Notification.DoesNotExist:  # type: ignore
             return Response({
                 'success': False,
                 'message': 'Notification not found.'
@@ -87,7 +87,9 @@ class SendAdvisorRecommendationView(APIView):
         user_id = request.data.get('user_id')
         title = request.data.get('title', 'Advisor Strategic Recommendation')
         message = (request.data.get('message') or '').strip()
-        notification_type = request.data.get('notification_type', 'Advisor')
+        raw_type = request.data.get('notification_type', 'System')
+        valid_types = [t[0] for t in Notification.NOTIFICATION_TYPES]
+        notification_type = raw_type if raw_type in valid_types else 'System'
 
         if not user_id or not message:
             return Response({
@@ -97,7 +99,7 @@ class SendAdvisorRecommendationView(APIView):
 
         try:
             target_user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
+        except User.DoesNotExist:  # type: ignore
             return Response({
                 'success': False,
                 'message': 'Target client not found.'

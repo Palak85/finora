@@ -72,7 +72,7 @@ class InvestmentListCreateView(generics.ListCreateAPIView):
                         'message': f'Insufficient balance in {account.account_name}. Available: ₹{account.balance}, Required: ₹{total_cost}'
                     }, status=status.HTTP_400_BAD_REQUEST)
 
-            with db_transaction.atomic():
+            with db_transaction.atomic():  # type: ignore
                 investment = serializer.save()
 
                 if account:

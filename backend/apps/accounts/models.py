@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import random
+from typing import Any
 
 class Account(models.Model):
     ACCOUNT_TYPES = (
@@ -24,8 +25,8 @@ class Account(models.Model):
     )
     account_name = models.CharField(max_length=100)
     account_type = models.CharField(max_length=30, choices=ACCOUNT_TYPES, default='Savings')
-    account_number = models.CharField(max_length=34)
-    masked_account_number = models.CharField(max_length=34, blank=True)
+    account_number: Any = models.CharField(max_length=34)
+    masked_account_number: Any = models.CharField(max_length=34, blank=True)
     bank_name = models.CharField(max_length=100, default='Finora Bank')
     balance = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
     currency = models.CharField(max_length=10, default='INR')
@@ -47,12 +48,12 @@ class Account(models.Model):
     def save(self, *args, **kwargs):
         if not self.account_number:
             # Generate realistic 12-digit random account number if not provided
-            self.account_number = "".join([str(random.randint(0, 9)) for _ in range(12)])
+            self.account_number = "".join([str(random.randint(0, 9)) for _ in range(12)])  # type: ignore
         
         # Always calculate masked account number (e.g., "•••• •••• 4892")
         raw_clean = str(self.account_number).replace(' ', '').replace('-', '')
         last_4 = raw_clean[-4:] if len(raw_clean) >= 4 else raw_clean
-        self.masked_account_number = f"•••• •••• {last_4}"
+        self.masked_account_number = f"•••• •••• {last_4}"  # type: ignore
         super().save(*args, **kwargs)
 
     def __str__(self):

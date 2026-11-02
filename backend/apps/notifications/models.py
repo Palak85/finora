@@ -1,7 +1,11 @@
 from django.db import models
 from django.conf import settings
+from typing import Any
 
 class Notification(models.Model):
+    DoesNotExist: Any
+    MultipleObjectsReturned: Any
+
     NOTIFICATION_TYPES = (
         ('Budget Alert', 'Budget Alert'),
         ('Bill Reminder', 'Bill Reminder'),
@@ -12,7 +16,6 @@ class Notification(models.Model):
         ('Transaction', 'Transaction'),
         ('Account', 'Account'),
         ('Goal', 'Goal'),
-        ('Advisor', 'Advisor'),
     )
 
     user = models.ForeignKey(

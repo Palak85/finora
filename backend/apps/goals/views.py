@@ -73,7 +73,7 @@ class GoalListCreateView(generics.ListCreateAPIView):
                         'message': f'Insufficient balance in {account.account_name}. Available: ₹{account.balance}, Required: ₹{initial_amount}'
                     }, status=status.HTTP_400_BAD_REQUEST)
 
-            with db_transaction.atomic():
+            with db_transaction.atomic():  # type: ignore
                 goal = serializer.save()
 
                 if account and initial_amount > Decimal('0.00'):
@@ -203,7 +203,7 @@ class GoalContributeView(APIView):
                 'message': f'Insufficient balance in {account.account_name}. Available: ₹{account.balance}, Required: ₹{amount}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        with db_transaction.atomic():
+        with db_transaction.atomic():  # type: ignore
             # Deducts from account.balance via Transaction.save()
             Transaction.objects.create(
                 user=request.user,

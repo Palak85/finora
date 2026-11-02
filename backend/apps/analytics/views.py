@@ -142,3 +142,8 @@ class AnalyticsView(APIView):
                 }
             }
         }, status=status.HTTP_200_OK)
+
+
+
+
+# APIView -> Creates a custom API endpoint.
